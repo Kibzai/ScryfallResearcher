@@ -1,0 +1,2 @@
+# ScryfallResearcher
+Scryfall API Researcher
