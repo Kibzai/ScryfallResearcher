@@ -1,4 +1,3 @@
-```markdown
 # Multiverse · Scryfall Researcher — Complete Architecture & Logic
 
 **A self-contained, offline-capable Magic: The Gathering research tool powered by the Scryfall API**  
@@ -401,4 +400,3 @@ No other libraries or polyfills are used. The app is entirely vanilla JavaScript
 The Scryfall Researcher is a polished, feature‑rich, offline‑capable Magic: The Gathering card search tool built with careful attention to data caching, user experience, and API rate‑limit compliance. Its internal logic prioritizes predictability: every query is translated deterministically, every API response is cached, and every UI state transition is animated to keep the user informed. The codebase is a single, well‑structured IIFE that can be understood by any developer familiar with vanilla JavaScript and browser storage APIs.
 
 For any modifications or deployment, refer to the detailed comments within the HTML itself and this architectural document.
-```
