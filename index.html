@@ -1,0 +1,1918 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>Magic: The Gathering · Scryfall Researcher</title>
+  <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg-deep: #0a0c10;
+      --bg-panel: #11151c;
+      --bg-elevated: #0e1219;
+      --border-subtle: #1f262f;
+      --border-card: #2a313c;
+      --text-primary: #e8edf2;
+      --text-secondary: #b3cbe0;
+      --text-muted: #7e9ec7;
+      --accent: #4f7a9e;
+      --accent-glow: #5f7fa0;
+      --danger: #5a2a2a;
+      --stop-color: #8b3a3a;
+      --success: #6fcf97;
+      --transition-fast: 0.18s ease-out;
+      --transition-smooth: 0.35s cubic-bezier(0.22, 0.61, 0.36, 1);
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.4);
+      --shadow-modal: 0 12px 40px rgba(0, 0, 0, 0.7);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: var(--bg-deep);
+      font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+      color: var(--text-primary);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    #wrapper {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+    }
+
+    .multiverse-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      padding-bottom: 1rem;
+    }
+
+    .logo {
+      font-size: 1.5rem;
+      font-weight: 500;
+      letter-spacing: -0.3px;
+      color: #cbd5e6;
+    }
+
+    .logo strong {
+      font-weight: 600;
+      color: #9cb4dc;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 0.8rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .random-btn {
+      background: #3a5a78;
+      border: none;
+      color: white;
+      font-weight: 500;
+      padding: 7px 18px;
+      cursor: pointer;
+      transition: var(--transition-fast);
+      font-size: 0.8rem;
+      border-radius: var(--radius-sm);
+      letter-spacing: 0.2px;
+    }
+
+    .random-btn:hover {
+      background: #4f7a9e;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 10px rgba(79, 122, 158, 0.3);
+    }
+
+    .random-btn:active {
+      transform: scale(0.97);
+    }
+
+    .about-link {
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 0.4rem 1rem;
+      cursor: pointer;
+      transition: var(--transition-fast);
+      font-size: 0.8rem;
+      border-radius: var(--radius-sm);
+      color: var(--text-secondary);
+    }
+
+    .about-link:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: #6c86a3;
+      color: #fff;
+    }
+
+    .quill-card {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-subtle);
+      margin-bottom: 1.5rem;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+
+    .editor-toolbar {
+      background: #0d1117;
+      padding: 0.7rem 1.2rem;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      border-bottom: 1px solid #1e242c;
+    }
+
+    #quill-editor {
+      min-height: 15rem;
+      background: #0f141c;
+      color: #eef4ff;
+    }
+
+    .ql-snow .ql-stroke {
+      stroke: #b3c7e3;
+    }
+
+    .ql-snow .ql-fill,
+    .ql-snow .ql-stroke.ql-fill {
+      fill: #b3c7e3;
+    }
+
+    .ql-snow .ql-picker {
+      color: #cfdfef;
+    }
+
+    .ql-snow .ql-picker-options {
+      background: #1a202c;
+    }
+
+    .ql-toolbar.ql-snow {
+      border: none;
+      border-bottom: 1px solid #1f2a33;
+      background: #0d1117;
+    }
+
+    .ql-container.ql-snow {
+      border: none;
+      font-size: 0.9rem;
+    }
+
+    .search-btn {
+      background: #2c4f6e;
+      border: none;
+      color: white;
+      font-weight: 500;
+      padding: 7px 20px;
+      cursor: pointer;
+      transition: var(--transition-fast);
+      font-size: 0.8rem;
+      border-radius: var(--radius-sm);
+      letter-spacing: 0.3px;
+    }
+
+    .search-btn:hover {
+      background: #3b6488;
+      box-shadow: 0 2px 12px rgba(59, 100, 136, 0.35);
+    }
+
+    .search-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      filter: grayscale(20%);
+    }
+
+    .stop-btn {
+      background: var(--stop-color);
+      border: none;
+      color: white;
+      font-weight: 500;
+      padding: 7px 16px;
+      cursor: pointer;
+      transition: var(--transition-fast);
+      font-size: 0.8rem;
+      border-radius: var(--radius-sm);
+      letter-spacing: 0.3px;
+      display: none;
+    }
+
+    .stop-btn.visible {
+      display: inline-block;
+    }
+
+    .stop-btn:hover {
+      background: #a04040;
+      box-shadow: 0 2px 12px rgba(160, 64, 64, 0.35);
+    }
+
+    .controls-row {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      padding: 0.9rem 1.2rem;
+      margin: 1rem 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+      align-items: center;
+      border-radius: var(--radius-sm);
+    }
+
+    .control-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.9rem;
+      align-items: center;
+    }
+
+    .control-group label {
+      font-size: 0.7rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      color: var(--text-secondary);
+    }
+
+    .art-selector {
+      display: flex;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .art-selector label {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #0f1622;
+      padding: 3px 10px;
+      cursor: pointer;
+      transition: var(--transition-fast);
+      font-size: 0.7rem;
+      border-radius: 4px;
+      color: var(--text-secondary);
+    }
+
+    .art-selector label:hover {
+      background: #1a2533;
+      border-color: var(--accent-glow);
+      color: #fff;
+    }
+
+    .art-selector input[type="radio"] {
+      margin: 0;
+      accent-color: #3b6488;
+    }
+
+    .view-toggle {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-left: auto;
+    }
+
+    .view-toggle label {
+      font-size: 0.7rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      color: var(--text-secondary);
+    }
+
+    .doc-panel,
+    .advanced-wrap,
+    .dev-panel,
+    .db-panel {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      margin-bottom: 1rem;
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+
+    .doc-toggle,
+    .advanced-toggle,
+    .dev-toggle,
+    .db-toggle {
+      width: 100%;
+      background: #0c1017;
+      border: none;
+      padding: 11px 22px;
+      text-align: left;
+      font-weight: 500;
+      font-size: 0.85rem;
+      color: #bfd4ed;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      font-family: inherit;
+      transition: background var(--transition-fast);
+    }
+
+    .doc-toggle:hover,
+    .advanced-toggle:hover,
+    .dev-toggle:hover,
+    .db-toggle:hover {
+      background: #11171f;
+    }
+
+    .doc-content,
+    .advanced-content,
+    .dev-content,
+    .db-content {
+      padding: 1rem 1.2rem;
+      border-top: 1px solid #1e2530;
+      display: none;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .doc-content {
+      font-size: 0.75rem;
+      display: none;
+    }
+
+    .doc-content table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 1rem;
+    }
+
+    .doc-content th,
+    .doc-content td {
+      padding: 6px 8px;
+      text-align: left;
+    }
+
+    .doc-content code {
+      background: #03060c;
+      padding: 2px 4px;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+
+    .code-card,
+    .dev-section {
+      background: #0a0e14;
+      padding: 0.9rem;
+      border-left: 2px solid #3e6b8f;
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    }
+
+    .code-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 600;
+      color: #7e9ec7;
+      margin-bottom: 6px;
+    }
+
+    .mono-block {
+      font-family: 'Fira Code', 'Cascadia Code', monospace;
+      background: #03060c;
+      padding: 10px 12px;
+      font-size: 0.75rem;
+      color: #d1e2f5;
+      border: 1px solid #232a33;
+      resize: vertical;
+      width: 100%;
+      max-height: 30rem;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      border-radius: 4px;
+    }
+
+    .query-editor {
+      font-family: 'Fira Code', 'Cascadia Code', monospace;
+      background: #03060c;
+      padding: 10px 12px;
+      font-size: 0.75rem;
+      color: #d1e2f5;
+      border: 1px solid #232a33;
+      resize: vertical;
+      width: 100%;
+      height: 14rem;
+      white-space: pre-wrap;
+      word-break: break-word;
+      border-radius: 4px;
+    }
+
+    .button-small {
+      background: #253a4d;
+      border: none;
+      padding: 5px 16px;
+      font-size: 0.7rem;
+      font-weight: 500;
+      color: white;
+      cursor: pointer;
+      margin-top: 8px;
+      margin-right: 8px;
+      border-radius: 4px;
+      transition: var(--transition-fast);
+    }
+
+    .button-small:hover {
+      background: #345e7e;
+      box-shadow: 0 1px 6px rgba(52, 94, 126, 0.3);
+    }
+
+    .db-actions {
+      display: flex;
+      gap: 0.8rem;
+      flex-wrap: wrap;
+      margin-bottom: 0.5rem;
+      align-items: center;
+    }
+
+    .db-actions button {
+      background: #253a4d;
+      border: none;
+      padding: 5px 16px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: white;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: var(--transition-fast);
+    }
+
+    .db-actions button:hover {
+      background: #345e7e;
+    }
+
+    .db-actions button.danger {
+      background: var(--danger);
+    }
+
+    .db-actions button.danger:hover {
+      background: #7a3a3a;
+    }
+
+    .db-actions button.refresh {
+      background: #2a4a5a;
+    }
+
+    .db-stats {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    .db-entries {
+      max-height: 50rem;
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 0.65rem;
+      background: #03060c;
+      border: 1px solid #1a212e;
+      padding: 8px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-start;
+      border-radius: 4px;
+    }
+
+    .db-entries .card-grid-item {
+      width: 120px;
+      background: #131b26;
+      border: 1px solid #2a313c;
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform var(--transition-fast), border-color var(--transition-fast);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .db-entries .card-grid-item:hover {
+      transform: translateY(-3px);
+      border-color: var(--accent-glow);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+    }
+
+    .db-entries .card-grid-item img {
+      width: 100%;
+      aspect-ratio: 3/4;
+      object-fit: cover;
+      display: block;
+      background: #0b101a;
+    }
+
+    .db-entries .card-grid-item .card-name {
+      padding: 4px 6px;
+      font-size: 0.7rem;
+      text-align: center;
+      background: #0f1622;
+      color: #d5e4f5;
+      width: 100%;
+    }
+
+    /* === STICKY STATS BAR === */
+    .stats-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 0 0 1rem 0;
+      padding: 0.7rem 1.2rem;
+      background: rgba(14, 18, 25, 0.82);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      position: sticky;
+      top: 0.6rem;
+      z-index: 1000;
+      transition: box-shadow var(--transition-fast);
+    }
+
+    .stats-bar.scrolled {
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    }
+
+    .card-badge {
+      background: #171e28;
+      padding: 5px 16px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      border-radius: 4px;
+      transition: background var(--transition-fast);
+    }
+
+    #cardGrid {
+      position: relative;
+      min-height: 200px;
+      transition: opacity var(--transition-smooth);
+    }
+
+    #cardGrid.grid-mixed {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(190px, 220px));
+      gap: 1.2rem;
+      justify-content: center;
+    }
+
+    #cardGrid.grid-rows {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .query-row {
+      border: 1px solid #2a313c;
+      background: #11161f;
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+
+    .query-header {
+      background: #0a0f16;
+      padding: 8px 14px;
+      font-size: 0.7rem;
+      color: #8da3c0;
+      border-bottom: 1px solid #212834;
+      font-family: monospace;
+      word-break: break-word;
+    }
+
+    .query-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(190px, 220px));
+      gap: 1rem;
+      padding: 1rem;
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(14px) scale(0.96);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @keyframes shimmer {
+      0% {
+        background-position: -200px 0;
+      }
+
+      100% {
+        background-position: calc(200px + 100%) 0;
+      }
+    }
+
+    .card-thumb {
+      background: #131b26;
+      border: 1px solid #2a313c;
+      border-radius: var(--radius-sm);
+      transition: transform var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+      opacity: 0;
+      animation: fadeInUp 0.45s ease-out forwards;
+      will-change: transform, opacity;
+    }
+
+    .card-thumb:hover {
+      transform: translateY(-4px) scale(1.02);
+      border-color: var(--accent-glow);
+      box-shadow: 0 8px 22px rgba(0, 0, 0, 0.55);
+      z-index: 2;
+    }
+
+    .card-thumb:active {
+      transform: scale(0.97);
+    }
+
+    .card-img {
+      width: 100%;
+      aspect-ratio: 3/4;
+      object-fit: cover;
+      background: #0b101a;
+      display: block;
+      transition: opacity 0.3s ease;
+    }
+
+    .card-img.loading-img {
+      padding: 1rem;
+      opacity: 0;
+    }
+
+    .card-img.loaded {
+      opacity: 1;
+    }
+
+    .card-skeleton {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      aspect-ratio: 3/4;
+      background: linear-gradient(90deg, #151e2a 25%, #1c2735 37%, #151e2a 63%);
+      background-size: 200px 100%;
+      animation: shimmer 1.6s infinite ease-in-out;
+      pointer-events: none;
+      z-index: 1;
+      border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+    }
+
+    .card-img.loaded+.card-skeleton,
+    .card-img:not(.loading-img)+.card-skeleton {
+      display: none;
+    }
+
+    .card-name {
+      padding: 8px 8px 3px;
+      font-weight: 600;
+      font-size: 0.8rem;
+      text-align: center;
+      background: #0f1622;
+      word-break: break-word;
+      color: #dce5f2;
+    }
+
+    .card-oracle-preview {
+      font-size: 0.55rem;
+      color: #8da3c0;
+      text-align: center;
+      padding: 3px 6px 5px;
+      background: #0f1622;
+      border-top: 1px solid #212834;
+      word-break: break-word;
+      line-height: 1.3;
+      max-height: 7em;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .card-source {
+      font-size: 0.55rem;
+      color: #6a7f8b;
+      text-align: center;
+      padding: 2px 6px 6px;
+      background: #0f1622;
+      border-top: 1px solid #212834;
+      word-break: break-word;
+    }
+
+    .no-results,
+    .loading-state {
+      background: #11171f;
+      padding: 3rem 2rem;
+      text-align: center;
+      font-size: 0.85rem;
+      color: #7f95b5;
+      grid-column: 1 / -1;
+      border-radius: var(--radius-sm);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.8rem;
+    }
+
+    .loading-dots {
+      display: inline-flex;
+      gap: 4px;
+    }
+
+    .loading-dots span {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #7e9ec7;
+      animation: dotBounce 1.2s infinite ease-in-out;
+    }
+
+    .loading-dots span:nth-child(2) {
+      animation-delay: 0.15s;
+    }
+
+    .loading-dots span:nth-child(3) {
+      animation-delay: 0.3s;
+    }
+
+    @keyframes dotBounce {
+
+      0%,
+      80%,
+      100% {
+        transform: scale(0.6);
+        opacity: 0.4;
+      }
+
+      40% {
+        transform: scale(1.3);
+        opacity: 1;
+      }
+    }
+
+    /* === SCROLL TO TOP BUTTON === */
+    .scroll-top-btn {
+      position: fixed;
+      bottom: 2rem;
+      left: 2rem;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: rgba(30, 40, 55, 0.9);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid #3a4a60;
+      color: #b3cbe0;
+      font-size: 1.3rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 999;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 0.25s ease, transform 0.25s ease, background var(--transition-fast);
+      pointer-events: none;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+    }
+
+    .scroll-top-btn.visible {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    .scroll-top-btn:hover {
+      background: rgba(60, 80, 110, 0.9);
+      border-color: #5f7fa0;
+      color: #fff;
+      transform: translateY(-2px);
+    }
+
+    .scroll-top-btn:active {
+      transform: scale(0.93);
+    }
+
+    /* === MODAL === */
+    @keyframes modalFadeIn {
+      from {
+        opacity: 0;
+      }
+
+      to {
+        opacity: 1;
+      }
+    }
+
+    @keyframes modalSlideUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px) scale(0.96);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.88);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      z-index: 20000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      padding: 1rem;
+      animation: modalFadeIn 0.25s ease-out;
+    }
+
+    .modal-overlay.closing {
+      animation: modalFadeIn 0.2s ease-out reverse;
+      pointer-events: none;
+    }
+
+    .modal-container {
+      background: #0e141c;
+      width: 100%;
+      max-width: 1000px;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border: 1px solid #2f3b48;
+      cursor: default;
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-modal);
+      animation: modalSlideUp 0.35s cubic-bezier(0.22, 0.61, 0.36, 1);
+    }
+
+    .modal-overlay.closing .modal-container {
+      animation: modalSlideUp 0.22s cubic-bezier(0.22, 0.61, 0.36, 1) reverse;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 22px;
+      background: #0a0f16;
+      border-bottom: 1px solid #222a33;
+      flex-shrink: 0;
+    }
+
+    .modal-header h3 {
+      font-size: 1rem;
+      font-weight: 500;
+      color: #dceaff;
+      margin: 0;
+      word-break: break-word;
+    }
+
+    .modal-header .close-modal-btn {
+      background: none;
+      border: none;
+      color: #a5c1e0;
+      font-size: 1.6rem;
+      cursor: pointer;
+      line-height: 1;
+      padding: 0 8px;
+      transition: color var(--transition-fast);
+      border-radius: 4px;
+    }
+
+    .modal-header .close-modal-btn:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .modal-body {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      padding: 1.2rem 1.5rem;
+      overflow-y: auto;
+      background: #0c1119;
+      flex: 1;
+      overscroll-behavior: contain;
+    }
+
+    .modal-image-area {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+      position: relative;
+      opacity: 0;
+      animation: fadeInUp 0.4s ease-out 0.1s forwards;
+    }
+
+    .modal-image-area img {
+      max-width: 100%;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.6);
+      background: #0a0f16;
+      border-radius: 4px;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-image-area img.modal-img-hidden {
+      opacity: 0;
+    }
+
+    .modal-image-area img.modal-img-visible {
+      opacity: 1;
+    }
+
+    .modal-faces {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      gap: 1rem;
+      margin-top: 0.5rem;
+    }
+
+    .modal-faces .face-item {
+      width: 100%;
+      text-align: center;
+      background: #0a0f16;
+      padding: 8px;
+      border: 1px solid #1a212e;
+      border-radius: var(--radius-sm);
+      opacity: 0;
+      animation: fadeInUp 0.4s ease-out forwards;
+    }
+
+    .modal-faces .face-item:nth-child(1) {
+      animation-delay: 0.15s;
+    }
+
+    .modal-faces .face-item:nth-child(2) {
+      animation-delay: 0.25s;
+    }
+
+    .modal-faces .face-item img {
+      width: 100%;
+      border-radius: 4px;
+      margin: 0 auto 6px;
+      display: block;
+    }
+
+    .modal-faces .face-label {
+      font-size: 0.8rem;
+      color: #b3cbe0;
+      font-weight: 600;
+      margin: 6px 0 2px;
+    }
+
+    .modal-faces .face-oracle {
+      font-size: 0.75rem;
+      color: #d5e4f5;
+      padding: 4px 8px;
+      background: #05090f;
+      border-radius: 4px;
+      margin-top: 4px;
+      text-align: left;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .modal-loader {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      color: #7e9ec7;
+      font-size: 0.85rem;
+      padding: 2rem 0;
+      text-align: center;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.75);
+      padding: 14px 28px;
+      border-radius: var(--radius-md);
+      z-index: 5;
+      pointer-events: none;
+    }
+
+    .modal-loader .loading-dots span {
+      background: #7e9ec7;
+    }
+
+    .modal-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      width: 100%;
+      opacity: 0;
+      animation: fadeInUp 0.4s ease-out 0.2s forwards;
+    }
+
+    .modal-info .card-name-line {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #eef4ff;
+    }
+
+    .modal-info .card-type-line {
+      font-size: 0.85rem;
+      color: #b3cbe0;
+      font-style: italic;
+    }
+
+    .modal-info .card-oracle {
+      font-size: 0.85rem;
+      color: #d5e4f5;
+      background: #0a0f16;
+      padding: 8px 14px;
+      border-left: 2px solid #3e6b8f;
+      margin: 4px 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      border-radius: 0 4px 4px 0;
+    }
+
+    .modal-info .card-oracle .mana-symbol {
+      font-family: 'MPlantin', 'Segoe UI', monospace;
+      background: #1a212e;
+      padding: 0 4px;
+      border-radius: 2px;
+    }
+
+    .modal-meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 4px 12px;
+      background: #0a0f16;
+      padding: 8px 14px;
+      font-size: 0.7rem;
+      border-radius: 4px;
+    }
+
+    .modal-meta-grid .meta-label {
+      color: #7e9ec7;
+      font-weight: 500;
+    }
+
+    .modal-meta-grid .meta-value {
+      color: #d5e4f5;
+    }
+
+    .modal-legality-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+      gap: 2px 10px;
+      background: #0a0f16;
+      padding: 6px 14px;
+      font-size: 0.65rem;
+      border-radius: 4px;
+    }
+
+    .modal-legality-grid .legality-item {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .modal-legality-grid .legality-item .format {
+      color: #8da3c0;
+    }
+
+    .modal-legality-grid .legality-item .status {
+      font-weight: 500;
+    }
+
+    .modal-legality-grid .legality-item .status.legal {
+      color: #6fcf97;
+    }
+
+    .modal-legality-grid .legality-item .status.not_legal {
+      color: #888;
+    }
+
+    .modal-legality-grid .legality-item .status.restricted {
+      color: #f2c94a;
+    }
+
+    .modal-legality-grid .legality-item .status.banned {
+      color: #f28b82;
+    }
+
+    .modal-prices {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 16px;
+      background: #0a0f16;
+      padding: 6px 14px;
+      font-size: 0.7rem;
+      border-radius: 4px;
+    }
+
+    .modal-prices .price-item .currency {
+      color: #7e9ec7;
+    }
+
+    .modal-prices .price-item .amount {
+      color: #d5e4f5;
+      font-weight: 500;
+    }
+
+    .modal-json-toggle {
+      background: none;
+      border: none;
+      color: #7e9ec7;
+      font-size: 0.65rem;
+      cursor: pointer;
+      text-align: left;
+      padding: 4px 0;
+    }
+
+    .modal-json-toggle:hover {
+      color: #b3cbe0;
+    }
+
+    .modal-json-box {
+      background: #05090f;
+      padding: 8px 14px;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.6rem;
+      color: #cbdae9;
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 30rem;
+      overflow-y: auto;
+      border: 1px solid #1a212e;
+      display: none;
+      border-radius: 4px;
+    }
+
+    .modal-source-badge {
+      font-size: 0.6rem;
+      color: #7e9ec7;
+      background: #0a0f16;
+      padding: 4px 10px;
+      border: 1px solid #1a212e;
+      margin-bottom: 4px;
+      display: inline-block;
+      border-radius: 4px;
+    }
+
+    .modal-footer-link {
+      margin-top: 0.5rem;
+      font-size: 0.7rem;
+      text-align: center;
+      padding: 6px 0;
+      border-top: 1px solid #1a212e;
+    }
+
+    .modal-footer-link a {
+      color: #7e9ec7;
+      text-decoration: none;
+      transition: color var(--transition-fast);
+    }
+
+    .modal-footer-link a:hover {
+      color: #b3cbe0;
+      text-decoration: underline;
+    }
+
+    @media (max-width:700px) {
+      .modal-faces .face-item {
+        max-width: 100%;
+      }
+
+      .modal-meta-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .grid-mixed,
+      .query-cards {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 0.8rem;
+      }
+
+      #wrapper {
+        padding: 1rem;
+      }
+
+      .controls-row {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .view-toggle {
+        margin-left: 0;
+      }
+
+      .header-actions {
+        width: 100%;
+        justify-content: flex-start;
+      }
+
+      .db-entries .card-grid-item {
+        width: 80px;
+      }
+
+      .modal-container {
+        max-width: 98vw;
+        max-height: 95vh;
+      }
+
+      .scroll-top-btn {
+        bottom: 1rem;
+        left: 1rem;
+        width: 38px;
+        height: 38px;
+      }
+    }
+
+    input,
+    select {
+      background: #11161f;
+      color: #eef4ff;
+      padding: 5px 10px;
+      font-size: 0.7rem;
+      border-radius: 4px;
+      transition: border-color var(--transition-fast);
+    }
+
+    input:focus,
+    select:focus {
+      outline: none;
+      border-color: var(--accent-glow);
+      box-shadow: 0 0 0 2px rgba(79, 122, 158, 0.2);
+    }
+
+    footer {
+      margin-top: 2.5rem;
+      text-align: center;
+      font-size: 0.65rem;
+      color: #5e748c;
+      border-top: 1px solid #1b212a;
+      padding-top: 1.2rem;
+    }
+
+    button,
+    .card-thumb,
+    .about-link {
+      user-select: none;
+      cursor: pointer;
+    }
+
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #0a0e14;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #2a3548;
+      border-radius: 3px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #3b4d63;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="wrapper">
+    <div class="multiverse-header">
+      <div class="logo"><strong>Scryfall</strong> · Researcher</div>
+      <div class="header-actions">
+        <button class="random-btn" id="randomBtn">🎲 random</button>
+        <div class="about-link" id="aboutFooterBtn">info</div>
+      </div>
+    </div>
+
+    <div class="quill-card">
+      <div class="editor-toolbar">
+        <span style="font-size:0.75rem;color:#b8cef0;">one query per line — Scryfall syntax</span>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button class="stop-btn" id="stopBtn">⏹ stop</button>
+          <button class="search-btn" id="searchBtn">search</button>
+        </div>
+      </div>
+      <div id="quill-editor"></div>
+      <div style="padding:6px 18px 12px;font-size:0.65rem;opacity:0.6;">
+        name:, o:, t:, c:, id:, pow:, tou:, mv:, r:, set:, q:, operators, "exact", natural language, "add: RRRRR"
+      </div>
+    </div>
+
+    <div class="doc-panel">
+      <button class="doc-toggle" id="docToggleBtn">📘 syntax reference ▼</button>
+      <div class="doc-content" id="docContent">
+        <table>
+          <tr>
+            <th>Code</th>
+            <th>Definition</th>
+            <th>Example</th>
+          </tr>
+          <tr>
+            <td><code>name:</code></td>
+            <td>Card name</td>
+            <td><code>name:"Black Lotus"</code></td>
+          </tr>
+          <tr>
+            <td><code>o:</code></td>
+            <td>Oracle text</td>
+            <td><code>o:"enters the battlefield"</code></td>
+          </tr>
+          <tr>
+            <td><code>t:</code></td>
+            <td>Type</td>
+            <td><code>t:creature t:cat</code></td>
+          </tr>
+          <tr>
+            <td><code>c:</code></td>
+            <td>Color</td>
+            <td><code>c&lt;=WUBRG</code></td>
+          </tr>
+          <tr>
+            <td><code>id:</code></td>
+            <td>Color identity</td>
+            <td><code>id=WU</code></td>
+          </tr>
+          <tr>
+            <td><code>pow:</code></td>
+            <td>Power</td>
+            <td><code>pow&gt;=3</code></td>
+          </tr>
+          <tr>
+            <td><code>tou:</code></td>
+            <td>Toughness</td>
+            <td><code>tou&lt;=2</code></td>
+          </tr>
+          <tr>
+            <td><code>mv:</code></td>
+            <td>Mana value</td>
+            <td><code>mv&gt;3</code></td>
+          </tr>
+          <tr>
+            <td><code>r:</code></td>
+            <td>Rarity</td>
+            <td><code>r=mythic</code></td>
+          </tr>
+          <tr>
+            <td><code>set:</code></td>
+            <td>Set code</td>
+            <td><code>set:slp</code></td>
+          </tr>
+          <tr>
+            <td><code>q:</code></td>
+            <td>Quantity (cube)</td>
+            <td><code>q&gt;=3</code></td>
+          </tr>
+        </table>
+        <p>Operators: <code>:</code> (equals), <code>=</code>, <code>&gt;</code>, <code>&lt;</code>, <code>&gt;=</code>,
+          <code>&lt;=</code>, <code>!=</code>. Combine with spaces (AND). Quotes for exact phrases.</p>
+        <p>Example: <code>t:cat c&lt;=WGB pow&gt;3 r=uncommon</code></p>
+      </div>
+    </div>
+
+    <div class="controls-row">
+      <div class="art-selector" id="artStyleSelector">
+        <span class="code-label" style="margin:0;">art:</span>
+        <label><input type="radio" name="artStyle" value="normal" checked> normal</label>
+        <label><input type="radio" name="artStyle" value="large"> large</label>
+        <label><input type="radio" name="artStyle" value="art_crop"> art_crop</label>
+        <label><input type="radio" name="artStyle" value="png"> png</label>
+      </div>
+      <div class="control-group">
+        <label>sort: <select id="sortOrder">
+            <option value="oldest" selected>oldest first</option>
+            <option value="newest">newest first</option>
+            <option value="">none</option>
+          </select></label>
+        <label>set override: <input type="text" id="globalSet" placeholder="alpha, rtr" style="width:90px;"></label>
+        <label>lang: <select id="language">
+            <option value="">any</option>
+            <option value="en" selected>english</option>
+            <option value="es">español</option>
+          </select></label>
+        <label style="display:flex;gap:4px;"><input type="checkbox" id="firstPrintingOnly" checked> single print (oldest
+          per card)</label>
+      </div>
+      <div class="view-toggle">
+        <label><input type="checkbox" id="groupByQueryToggle"> group by query (rows)</label>
+      </div>
+    </div>
+
+    <div class="advanced-wrap">
+      <button class="advanced-toggle" id="advancedToggleBtn">⚙️ advanced · generated queries (editable) ▼</button>
+      <div class="advanced-content" id="advancedContent" style="display:none;">
+        <div class="code-card">
+          <div class="code-label">📄 detected lines</div>
+          <div class="mono-block" id="phrasesPreview"></div>
+        </div>
+        <div class="code-card">
+          <div class="code-label">🔧 generated queries (editable)</div><textarea id="customQueries"
+            class="query-editor"></textarea>
+          <div style="margin-top:8px;"><button id="searchCustomBtn" class="button-small">🚀 search these</button><button
+              id="refreshQueriesBtn" class="button-small">🔄 refresh</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dev-panel">
+      <button class="dev-toggle" id="devToggleBtn">🛠️ Developer · API endpoints, rate limits, bulk data ▼</button>
+      <div class="dev-content" id="devContent" style="display:none;">
+        <div class="dev-section">
+          <div class="code-label">🚦 Rate Limits</div>
+          <div style="font-size:0.75rem;color:#b3cbe0;padding:4px 0;">
+            <div><strong>/cards/search</strong> – 2/sec (500ms)</div>
+            <div><strong>Sustained traffic</strong> – ≤10/sec recommended</div>
+            <div style="margin-top:4px;color:#7e9ec7;">Serial requests with 1.2s delay.</div>
+          </div>
+        </div>
+        <div class="dev-section">
+          <div class="code-label">🔍 GET /cards/:code/:number</div>
+          <div class="dev-input-group"
+            style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;margin-top:4px;"><span
+              style="font-size:0.7rem;color:#7e9ec7;">set:</span><input type="text" id="cardSetInput" placeholder="LEA"
+              value="LEA" style="width:60px;"><span style="font-size:0.7rem;color:#7e9ec7;">#:</span><input type="text"
+              id="cardNumberInput" placeholder="1" value="1" style="width:70px;"><button id="fetchBySetNumBtn"
+              class="button-small" style="margin-top:0;">fetch</button></div>
+        </div>
+        <div class="dev-section">
+          <div class="code-label">🎲 GET /cards/random</div><button id="fetchRandomDevBtn" class="button-small"
+            style="margin-top:0;">random</button>
+        </div>
+        <div class="dev-section">
+          <div class="code-label">📦 GET /bulk-data</div><button id="fetchBulkBtn" class="button-small"
+            style="margin-top:0;">fetch bulk info</button>
+          <div id="bulkDataOutput"
+            style="margin-top:6px;font-family:monospace;font-size:0.7rem;color:#cbdae9;background:#03060c;padding:8px;border:1px solid #232a33;max-height:30rem;overflow-y:auto;display:none;border-radius:4px;">
+          </div>
+        </div>
+        <div class="dev-section">
+          <div class="code-label">🔗 All Endpoints</div>
+          <div style="font-size:0.75rem;color:#b3cbe0;padding:4px 0;font-family:monospace;">
+            <div><span style="color:#6fcf97;">✓</span> GET /cards/search</div>
+            <div><span style="color:#6fcf97;">✓</span> GET /cards/:code/:number</div>
+            <div><span style="color:#6fcf97;">✓</span> GET /cards/random</div>
+            <div><span style="color:#6fcf97;">✓</span> GET /cards/:id?format=image</div>
+            <div><span style="color:#6fcf97;">✓</span> GET /bulk-data</div>
+          </div>
+        </div>
+        <div class="dev-section">
+          <div class="code-label">📡 Last API Call</div>
+          <div id="lastApiCall" style="font-size:0.7rem;color:#7e9ec7;padding:4px 0;font-family:monospace;">— none —
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="db-panel">
+      <button class="db-toggle" id="dbToggleBtn">💾 Offline Database · IndexedDB ▼</button>
+      <div class="db-content" id="dbContent" style="display:none;">
+        <div class="db-actions"><button id="dbShowBtn">📋 Show all stored cards</button><button id="dbShowImagesBtn"
+            class="refresh">🖼️ Show all card images</button><button id="dbDeleteAllBtn" class="danger">🗑️ Delete all
+            data</button><span style="font-size:0.7rem;color:#7e9ec7;margin-left:auto;">Data persists offline until
+            deleted.</span></div>
+        <div class="db-stats" id="dbStats">—</div>
+        <div class="db-entries" id="dbEntries"><span style="color:#7e9ec7;">Click a button to view stored data.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="stats-bar" id="statsBar">
+      <span class="card-badge" id="resultCount">0 cards</span>
+      <span class="card-badge" id="errorCount">0 errors</span>
+      <span class="card-badge" id="progressMsg">ready</span>
+    </div>
+    <div id="cardGrid" class="grid-mixed"></div>
+    <footer>persistent IndexedDB · full card data · double-faced · offline ready</footer>
+  </div>
+
+  <!-- SCROLL TO TOP BUTTON -->
+  <button class="scroll-top-btn" id="scrollTopBtn" title="Back to top">↑</button>
+
+  <!-- MODAL -->
+  <div id="cardInfoModal" class="modal-overlay" style="display:none;">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 id="modalCardName">card details</h3><button class="close-modal-btn" id="closeModalBtn">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-loader" id="modalLoader"><span>Loading</span><span
+            class="loading-dots"><span></span><span></span><span></span></span></div>
+        <div class="modal-image-area">
+          <img id="modalCardImg" src="" alt="card art" class="modal-img-hidden" style="display:none;">
+          <div class="modal-faces" id="modalFaces"></div>
+        </div>
+        <div class="modal-info">
+          <div class="modal-source-badge" id="modalSourceBadge">from: search</div>
+          <div class="card-name-line" id="modalNameLine"></div>
+          <div class="card-type-line" id="modalTypeLine"></div>
+          <div class="card-oracle" id="modalOracleText"></div>
+          <div class="modal-meta-grid" id="modalMetaGrid"></div>
+          <div class="modal-prices" id="modalPrices"></div>
+          <div style="font-size:0.7rem;color:#7e9ec7;margin-top:4px;">Legalities</div>
+          <div class="modal-legality-grid" id="modalLegalityGrid"></div>
+          <button class="modal-json-toggle" id="modalJsonToggle">📄 show raw JSON</button>
+          <div class="modal-json-box" id="modalJsonBox"></div>
+          <div class="modal-footer-link"><a href="#" id="modalScryfallLink" target="_blank">🔗 View on Scryfall</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="aboutModal" class="modal-overlay" style="z-index:20001;display:none;">
+    <div class="modal-container" style="max-width:550px;">
+      <div class="modal-header">
+        <h3>about</h3><button class="close-modal-btn" id="closeAboutBtn">×</button>
+      </div>
+      <div class="modal-body" style="flex-direction:column;">
+        <p><strong>Multiverse · Scryfall Engine</strong></p>
+        <p>Full Scryfall API — all endpoints, images, bulk data, rate limits.</p>
+        <p>• One query per line.<br>• All Scryfall codes.<br>• Sticky stats bar while scrolling.<br>• Stop button to
+          cancel search.<br>• Animated modal content.<br>• Auto‑scroll follows new cards.<br>• Scroll‑to‑top button.</p>
+        <p style="margin-top:8px;font-size:0.65rem;color:#7e9ec7;"><a href="https://scryfall.com/docs/api"
+            style="color:#7e9ec7;text-decoration:underline;">Scryfall API Docs</a></p>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+  <script>
+    (function () {
+      const LOG = {
+        info: (...a) => console.log('%c🔵', 'font-weight:bold', ...a),
+        warn: (...a) => console.warn('%c🟡', 'font-weight:bold', ...a),
+        error: (...a) => console.error('%c🔴', 'font-weight:bold', ...a),
+        success: (...a) => console.log('%c🟢', 'font-weight:bold', ...a),
+        debug: (...a) => console.log('%c🔹', 'font-weight:normal', ...a),
+      };
+      LOG.info('App starting – sticky bar, stop button, fixed Birgi, auto‑scroll, collector number');
+
+      const DOM = {
+        quillEditor: document.getElementById('quill-editor'), searchBtn: document.getElementById('searchBtn'), stopBtn: document.getElementById('stopBtn'),
+        cardGrid: document.getElementById('cardGrid'), resultCount: document.getElementById('resultCount'), errorCount: document.getElementById('errorCount'),
+        progress: document.getElementById('progressMsg'), statsBar: document.getElementById('statsBar'), aboutBtn: document.getElementById('aboutFooterBtn'),
+        randomBtn: document.getElementById('randomBtn'), artRadios: document.querySelectorAll('input[name="artStyle"]'), sortOrder: document.getElementById('sortOrder'),
+        globalSet: document.getElementById('globalSet'), language: document.getElementById('language'), firstPrinting: document.getElementById('firstPrintingOnly'),
+        groupByQuery: document.getElementById('groupByQueryToggle'), docToggle: document.getElementById('docToggleBtn'), docContent: document.getElementById('docContent'),
+        advToggle: document.getElementById('advancedToggleBtn'), advContent: document.getElementById('advancedContent'), phrasesPreview: document.getElementById('phrasesPreview'),
+        customQueries: document.getElementById('customQueries'), searchCustom: document.getElementById('searchCustomBtn'), refreshQueries: document.getElementById('refreshQueriesBtn'),
+        devToggle: document.getElementById('devToggleBtn'), devContent: document.getElementById('devContent'), fetchBulk: document.getElementById('fetchBulkBtn'),
+        bulkOutput: document.getElementById('bulkDataOutput'), lastApiCall: document.getElementById('lastApiCall'), fetchBySetNum: document.getElementById('fetchBySetNumBtn'),
+        cardSet: document.getElementById('cardSetInput'), cardNumber: document.getElementById('cardNumberInput'), fetchRandomDev: document.getElementById('fetchRandomDevBtn'),
+        dbToggle: document.getElementById('dbToggleBtn'), dbContent: document.getElementById('dbContent'), dbShow: document.getElementById('dbShowBtn'),
+        dbShowImages: document.getElementById('dbShowImagesBtn'), dbDeleteAll: document.getElementById('dbDeleteAllBtn'), dbStats: document.getElementById('dbStats'),
+        dbEntries: document.getElementById('dbEntries'), modal: document.getElementById('cardInfoModal'), modalLoader: document.getElementById('modalLoader'),
+        modalImg: document.getElementById('modalCardImg'), modalFaces: document.getElementById('modalFaces'), modalNameLine: document.getElementById('modalNameLine'),
+        modalTypeLine: document.getElementById('modalTypeLine'), modalOracleText: document.getElementById('modalOracleText'), modalMetaGrid: document.getElementById('modalMetaGrid'),
+        modalPrices: document.getElementById('modalPrices'), modalLegalityGrid: document.getElementById('modalLegalityGrid'), modalJsonBox: document.getElementById('modalJsonBox'),
+        modalJsonToggle: document.getElementById('modalJsonToggle'), modalCardName: document.getElementById('modalCardName'), modalSourceBadge: document.getElementById('modalSourceBadge'),
+        modalScryfallLink: document.getElementById('modalScryfallLink'), closeModal: document.getElementById('closeModalBtn'), aboutModal: document.getElementById('aboutModal'),
+        closeAbout: document.getElementById('closeAboutBtn'), scrollTopBtn: document.getElementById('scrollTopBtn')
+      };
+
+      let db = null;
+      const DB_NAME = 'ScryfallDB', DB_VERSION = 2, STORE_NAME = 'cards';
+      function openDB() {
+        return new Promise((resolve, reject) => {
+          const req = indexedDB.open(DB_NAME, DB_VERSION);
+          req.onerror = e => { reject(req.error); };
+          req.onsuccess = () => { db = req.result; resolve(db); };
+          req.onupgradeneeded = e => {
+            const d = e.target.result;
+            if (!d.objectStoreNames.contains(STORE_NAME)) {
+              const s = d.createObjectStore(STORE_NAME, { keyPath: 'key' });
+              s.createIndex('timestamp', 'timestamp'); s.createIndex('type', 'type');
+            }
+          };
+        });
+      }
+      function dbPut(key, data, type = 'card') { return new Promise(resolve => { if (!db) { resolve(false); return; } const tx = db.transaction(STORE_NAME, 'readwrite'); tx.objectStore(STORE_NAME).put({ key, data, type, timestamp: Date.now() }); tx.oncomplete = () => resolve(true); tx.onerror = () => resolve(false); }); }
+      function dbGet(key) { return new Promise(resolve => { if (!db) { resolve(null); return; } const tx = db.transaction(STORE_NAME, 'readonly'); const req = tx.objectStore(STORE_NAME).get(key); req.onsuccess = () => resolve(req.result ? req.result.data : null); req.onerror = () => resolve(null); }); }
+      function dbGetAll() { return new Promise(resolve => { if (!db) { resolve([]); return; } const tx = db.transaction(STORE_NAME, 'readonly'); const req = tx.objectStore(STORE_NAME).getAll(); req.onsuccess = () => resolve(req.result || []); req.onerror = () => resolve([]); }); }
+      function dbClear() { return new Promise(resolve => { if (!db) { resolve(false); return; } const tx = db.transaction(STORE_NAME, 'readwrite'); const req = tx.objectStore(STORE_NAME).clear(); req.onsuccess = () => resolve(true); req.onerror = () => resolve(false); }); }
+      async function getCardBySetNum(set, num) { const ref = await dbGet(`setnum:${set.toUpperCase()}/${num}`); return ref && ref.cardId ? await dbGet(`card:${ref.cardId}`) : null; }
+      async function saveCardAndRef(card) { await dbPut(`card:${card.id}`, card, 'card'); if (card.set && card.collector_number) { await dbPut(`setnum:${card.set.toUpperCase()}/${card.collector_number}`, { cardId: card.id }, 'setnum'); } }
+
+      const IMAGE_CACHE_NAME = 'scryfall-images-v2';
+      async function cacheImage(url) { try { const c = await caches.open(IMAGE_CACHE_NAME); const r = await fetch(url, { mode: 'cors' }); if (r.ok) { await c.put(url, r.clone()); return true; } return false; } catch (e) { return false; } }
+      async function getCachedImageUrl(url) { try { const c = await caches.open(IMAGE_CACHE_NAME); const r = await c.match(url); if (r) { const b = await r.blob(); return URL.createObjectURL(b); } return null; } catch (e) { return null; } }
+      async function preCacheCardImages(card) {
+        const urls = []; const sizes = ['normal', 'small'];
+        if (card.image_uris) sizes.forEach(k => { if (card.image_uris[k]) urls.push(card.image_uris[k]); });
+        if (card.card_faces) card.card_faces.forEach(f => { if (f.image_uris) sizes.forEach(k => { if (f.image_uris[k]) urls.push(f.image_uris[k]); }); });
+        let c = 0; for (const u of [...new Set(urls)]) { if (await cacheImage(u)) c++; } return c;
+      }
+
+      const keyMap = { t: 'type', c: 'color', id: 'identity', r: 'rarity', mv: 'mana' };
+      const quoteKeys = new Set(['name', 'oracle', 'type']);
+      function translateLine(line, globalSet, langVal) {
+        const addM = line.match(/^add:\s*(.+)$/i);
+        if (addM) { let s = addM[1].trim().toUpperCase(), sym = ''; for (const ch of s) { if ('WUBRGCS'.includes(ch)) sym += `{${ch}}`; else if (ch === 'P') sym += '{P}'; } if (!sym) sym = s; return `oracle:"add ${sym}"`; }
+        let raw = line.trim(); let processed = raw.replace(/^\d+\s+/, '');
+        let setCode = null;
+        let cn = null; // collector number
+        const setM = processed.match(/\(([A-Z0-9]+)\)\s*(\d+)?$/);
+        if (setM) {
+          setCode = setM[1];
+          if (setM[2]) cn = setM[2];
+          processed = processed.replace(setM[0], '').trim();
+        } else {
+          // Fallback to old extraction in case (SET) is not at the end (though unlikely)
+          const altM = processed.match(/\(([A-Z0-9]+)\)/);
+          if (altM) {
+            setCode = altM[1];
+            const idx = processed.indexOf(`(${setCode})`);
+            if (idx !== -1) processed = processed.substring(0, idx).trim();
+          }
+        }
+        processed = processed.replace(/\s+\*[FES]\*$/, '').replace(/\s+\*[FES]\*\s*$/, '').replace(/\s+\d+$/, '').replace(/\s+\*[A-Z0-9]+\*$/, '').replace(/\s+\d+\s*$/, '').trim();
+        if (processed.startsWith('"') && processed.endsWith('"')) { const name = processed.slice(1, -1); let q = `name:"${name}"`; const fs = setCode || globalSet; if (fs) q += ` set:${fs}`; if (cn) q += ` cn:${cn}`; if (langVal) q += ` lang:${langVal}`; return q; }
+        const isDoubleFaced = /\/\//.test(processed) || /\s\/\s/.test(processed);
+        if (isDoubleFaced) {
+          let name = processed.replace(/\s*\/+\s*/g, ' // ').replace(/\s+/g, ' ').trim();
+          let q = `(name:"${name.replace(/"/g, '\\"')}" OR oracle:"${name.replace(/"/g, '\\"')}")`;
+          const fs = setCode || globalSet; if (fs) q += ` set:${fs}`; if (cn) q += ` cn:${cn}`; if (langVal) q += ` lang:${langVal}`;
+          return q;
+        }
+        const hasKey = /(\b\w+[=:<>!]=?)/.test(processed);
+        if (!hasKey) { const esc = processed.replace(/"/g, '\\"'); let q = `(name:"${esc}" OR oracle:"${esc}")`; const fs = setCode || globalSet; if (fs) q += ` set:${fs}`; if (cn) q += ` cn:${cn}`; if (langVal) q += ` lang:${langVal}`; return q; }
+        const tokens = []; let cur = '', inQ = false;
+        for (const ch of processed) { if (ch === '"') { inQ = !inQ; cur += ch; } else if (ch === ' ' && !inQ) { if (cur) tokens.push(cur); cur = ''; } else cur += ch; }
+        if (cur) tokens.push(cur);
+        const keyT = [], freeT = [];
+        for (const t of tokens) { if (t.startsWith('"') && t.endsWith('"')) { freeT.push(t.slice(1, -1)); continue; } const m = t.match(/^([a-z]+)([=:<>!]=?)(.+)$/i); if (m) { let k = m[1].toLowerCase(), op = m[2] === ':' ? '=' : m[2]; op = op.replace(/≤/g, '<=').replace(/≥/g, '>='); keyT.push({ key: keyMap[k] || k, op, value: m[3] }); continue; } freeT.push(t); }
+        const parts = []; if (freeT.length) parts.push(`(name:"${freeT.join(' ').replace(/"/g, '\\"')}" OR oracle:"${freeT.join(' ').replace(/"/g, '\\"')}")`);
+        for (const kt of keyT) parts.push(quoteKeys.has(kt.key) ? `${kt.key}${kt.op}"${kt.value}"` : `${kt.key}${kt.op}${kt.value}`);
+        if (!parts.length) parts.push(`(name:"${processed.replace(/"/g, '\\"')}" OR oracle:"${processed.replace(/"/g, '\\"')}")`);
+        let q = parts.join(' '); const fs = setCode || globalSet; if (fs) q += ` set:${fs}`; if (cn) q += ` cn:${cn}`; if (langVal) q += ` lang:${langVal}`; return q;
+      }
+
+      let quill = DOM.quillEditor ? new Quill(DOM.quillEditor, { theme: 'snow', modules: { toolbar: [['bold', 'italic', 'underline'], ['clean']] } }) : null;
+      function getQuillText() { return quill ? quill.getText().trim() : ''; }
+      function splitLines(t) { return t ? t.split(/\r?\n/).filter(l => l.trim()) : []; }
+      function isIgnorable(l) { const lo = l.toLowerCase(); return lo.startsWith('sideboard:') || lo === 'sideboard' || lo === 'suggestion' || lo === 'commander' || lo === 'decklist'; }
+      function translateAll() {
+        const raw = getQuillText(); const lines = splitLines(raw).filter(l => !isIgnorable(l));
+        if (!lines.length) { DOM.phrasesPreview.innerText = '(empty)'; DOM.customQueries.value = ''; DOM.progress.innerText = 'ready'; return { lines: [], queries: [] }; }
+        const gs = DOM.globalSet.value.trim(), lang = DOM.language.value;
+        const queries = lines.map(l => translateLine(l, gs, lang)).filter(q => q);
+        DOM.phrasesPreview.innerText = lines.map((l, i) => `${i + 1}. ${l}`).join('\n');
+        DOM.customQueries.value = queries.join('\n'); DOM.progress.innerText = `${queries.length} query(s)`;
+        return { lines, queries };
+      }
+
+      function logApi(url, method, status, data) {
+        const ok = status >= 200 && status < 300;
+        const icon = ok ? '✅' : '❌';
+        const label = method === 'CACHE' ? '📦 CACHE' : `📡 ${method}`;
+        const shortUrl = url.length > 80 ? url.slice(0, 77) + '…' : url;
+        const disp = url.startsWith('http') ? new URL(url).pathname : shortUrl;
+        console.groupCollapsed(`${icon} ${label} ${disp} (${status})`);
+        console.log('Full URL:', url);
+        if (data) {
+          if (Array.isArray(data)) {
+            console.log('Cards:', data.length);
+            if (data.length) console.table(data.slice(0, 5).map(c => ({ name: c.name, set: c.set, rarity: c.rarity })));
+          } else console.log('Data:', data);
+        }
+        console.groupEnd();
+      }
+
+      async function fetchCached(query, addKey) {
+        const dbKey = `search:${query}|${addKey}`;
+        const cached = await dbGet(dbKey);
+        if (cached) { logApi(dbKey, 'CACHE', 200, cached); DOM.lastApiCall.innerText = `✅ DB: ${query.slice(0, 50)}...`; return cached; }
+        let url = `https://api.scryfall.com/cards/search?q=${encodeURIComponent(query)}&unique=prints`;
+        const sort = DOM.sortOrder.value; if (sort === 'oldest') url += '&order=released&dir=asc'; else if (sort === 'newest') url += '&order=released&dir=desc';
+        DOM.lastApiCall.innerText = `📡 ${url.slice(0, 70)}...`;
+        try {
+          const resp = await fetch(url, { headers: { 'Accept': 'application/json', 'User-Agent': 'MultiverseEngine/1.0' } });
+          if (!resp.ok) { logApi(url, 'GET', resp.status); return []; }
+          const data = await resp.json(); if (!data.data) return [];
+          let results = data.data;
+          if (DOM.firstPrinting.checked) { const m = new Map(); results.forEach(c => { const k = c.oracle_id || c.name; if (!m.has(k)) m.set(k, c); }); results = Array.from(m.values()); }
+          for (const c of results) { await dbPut(`card:${c.id}`, c, 'card'); await preCacheCardImages(c); }
+          await dbPut(dbKey, results, 'search');
+          logApi(url, 'GET', resp.status, results); DOM.lastApiCall.innerText = `✅ ${results.length} cards`;
+          return results;
+        } catch (e) { DOM.lastApiCall.innerText = `⚠️ ${e.message}`; LOG.error('Fetch error:', e); return []; }
+      }
+
+      async function fetchSingleCard(url, label) {
+        const isRandom = url.includes('/random'); let card = null;
+        if (!isRandom) { const m = url.match(/\/cards\/([A-Z0-9]+)\/([0-9]+)/i); if (m) { card = await getCardBySetNum(m[1], m[2]); if (card) { logApi(`setnum:${m[1]}/${m[2]}`, 'CACHE', 200, card); DOM.lastApiCall.innerText = `✅ DB: ${card.name}`; await preCacheCardImages(card); showModal(card, label); return card; } } }
+        DOM.lastApiCall.innerText = `📡 ${url}`; showLoadingModal(label);
+        try {
+          const resp = await fetch(url, { headers: { 'Accept': 'application/json', 'User-Agent': 'MultiverseEngine/1.0' } });
+          if (!resp.ok) return null; card = await resp.json(); if (card.object === 'error') return null;
+          DOM.lastApiCall.innerText = `✅ ${card.name} (${card.set})`; await saveCardAndRef(card); await preCacheCardImages(card); showModal(card, label); return card;
+        } catch (e) { DOM.lastApiCall.innerText = `⚠️ ${e.message}`; return null; }
+      }
+
+      let rowMap = new Map(), globalCardIndex = 0;
+      let autoScroll = true;
+
+      window.addEventListener('scroll', () => {
+        const atBottom = window.innerHeight + window.scrollY >= document.body.scrollHeight - 200;
+        autoScroll = atBottom;
+        DOM.statsBar.classList.toggle('scrolled', window.scrollY > 20);
+        // Show/hide scroll-to-top button
+        if (window.scrollY > 400) {
+          DOM.scrollTopBtn.classList.add('visible');
+        } else {
+          DOM.scrollTopBtn.classList.remove('visible');
+        }
+      });
+
+      function scrollToNewContent(element) {
+        if (autoScroll && element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }
+      }
+
+      function makeCardElement(card, sourceLine, staggerIndex) {
+        const div = document.createElement('div'); div.className = 'card-thumb';
+        div.style.animationDelay = `${Math.min(staggerIndex * 0.04, 1.2)}s`;
+        const img = document.createElement('img'); img.className = 'card-img loading-img'; img.alt = card.name; img.loading = 'lazy';
+        const skel = document.createElement('div'); skel.className = 'card-skeleton'; div.append(img, skel);
+        const nm = document.createElement('div'); nm.className = 'card-name'; nm.innerText = card.set ? `${card.name} (${card.set.toUpperCase()})` : card.name;
+        const ora = document.createElement('div'); ora.className = 'card-oracle-preview'; ora.innerText = card.oracle_text ? card.oracle_text.slice(0, 80) + (card.oracle_text.length > 80 ? '…' : '') : '';
+        const src = document.createElement('div'); src.className = 'card-source'; src.innerText = sourceLine.length > 40 ? sourceLine.slice(0, 37) + '…' : sourceLine;
+        div.append(nm, ora, src); div.addEventListener('click', () => showModal(card, 'search'));
+        (async () => { const u = await getImageUrlCached(card, getArtStyle()); img.src = u; img.onload = () => { img.classList.replace('loading-img', 'loaded'); skel.style.display = 'none'; }; img.onerror = () => { img.classList.replace('loading-img', 'loaded'); skel.style.display = 'none'; }; })();
+        return div;
+      }
+
+      function appendFlatCards(cards, sourceLine) {
+        if (!DOM.cardGrid.classList.contains('grid-mixed')) { DOM.cardGrid.innerHTML = ''; DOM.cardGrid.className = 'grid-mixed'; rowMap.clear(); }
+        const frag = document.createDocumentFragment();
+        cards.forEach(c => frag.appendChild(makeCardElement(c, sourceLine, globalCardIndex++)));
+        DOM.cardGrid.appendChild(frag);
+        scrollToNewContent(DOM.cardGrid.lastElementChild);
+      }
+
+      function addOrUpdateQueryGroup(line, cards) {
+        if (!DOM.cardGrid.classList.contains('grid-rows')) { DOM.cardGrid.innerHTML = ''; DOM.cardGrid.className = 'grid-rows'; rowMap.clear(); }
+        let row = rowMap.get(line);
+        if (!row) { row = document.createElement('div'); row.className = 'query-row'; const hdr = document.createElement('div'); hdr.className = 'query-header'; hdr.innerText = line; row.appendChild(hdr); const cc = document.createElement('div'); cc.className = 'query-cards'; row.appendChild(cc); DOM.cardGrid.appendChild(row); rowMap.set(line, row); }
+        const cc = row.querySelector('.query-cards'); cc.innerHTML = '';
+        if (cards.length) { const frag = document.createDocumentFragment(); cards.forEach(c => frag.appendChild(makeCardElement(c, line, globalCardIndex++))); cc.appendChild(frag); scrollToNewContent(cc.lastElementChild); }
+        else cc.innerHTML = `<div class="card-thumb" style="opacity:0.6;animation:none"><img class="card-img loaded" src="data:image/svg+xml,%3Csvg viewBox='0 0 200 280' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='200' height='280' fill='%23151e2a'/%3E%3Ctext x='20' y='140' fill='%23886464'%3E?%3C/text%3E%3C/svg%3E"><div class="card-name">not found</div></div>`;
+      }
+
+      function resetGridForSearch() { DOM.cardGrid.innerHTML = ''; DOM.cardGrid.className = DOM.groupByQuery.checked ? 'grid-rows' : 'grid-mixed'; rowMap.clear(); globalCardIndex = 0; autoScroll = true; }
+
+      let modalLoadId = 0, currentModalCardId = null;
+      function resetModalUI() {
+        DOM.modalImg.style.display = 'none'; DOM.modalImg.src = ''; DOM.modalImg.className = 'modal-img-hidden'; DOM.modalFaces.innerHTML = ''; DOM.modalLoader.style.display = 'flex'; DOM.modalLoader.querySelector('span').textContent = 'Loading';
+        DOM.modalCardName.innerText = 'Loading…'; DOM.modalSourceBadge.innerText = 'from: loading'; DOM.modalNameLine.innerHTML = ''; DOM.modalTypeLine.innerText = ''; DOM.modalOracleText.innerText = '';
+        DOM.modalMetaGrid.innerHTML = ''; DOM.modalPrices.innerHTML = ''; DOM.modalLegalityGrid.innerHTML = ''; DOM.modalJsonBox.innerText = ''; DOM.modalJsonBox.style.display = 'none'; DOM.modalJsonToggle.innerText = '📄 show raw JSON';
+        DOM.modalScryfallLink.href = '#'; DOM.modalScryfallLink.innerText = '🔗 …';
+        DOM.modal.querySelector('.modal-image-area').style.animation = 'none'; DOM.modal.querySelector('.modal-info').style.animation = 'none';
+        void DOM.modal.querySelector('.modal-image-area').offsetHeight; void DOM.modal.querySelector('.modal-info').offsetHeight;
+        DOM.modal.querySelector('.modal-image-area').style.animation = ''; DOM.modal.querySelector('.modal-info').style.animation = '';
+      }
+      function showLoadingModal(source) { resetModalUI(); DOM.modalSourceBadge.innerText = `from: ${source || 'loading'}`; DOM.modal.style.display = 'flex'; DOM.modal.classList.remove('closing'); document.body.style.overflow = 'hidden'; currentModalCardId = null; }
+      async function showModal(card, source) {
+        const thisLoadId = ++modalLoadId; currentModalCardId = card.id; resetModalUI(); DOM.modal.style.display = 'flex'; DOM.modal.classList.remove('closing'); document.body.style.overflow = 'hidden';
+        try {
+          const style = getArtStyle(), layout = card.layout, hasFaces = card.card_faces && card.card_faces.length > 0;
+          const faceUrls = []; if (hasFaces) { for (let i = 0; i < card.card_faces.length; i++) faceUrls.push(await getImageUrlForCard(card, i, style)); } else faceUrls.push(await getImageUrlForCard(card, null, style));
+          if (thisLoadId !== modalLoadId) return;
+          if (hasFaces && layout !== 'adventure') { DOM.modalImg.style.display = 'none'; for (let i = 0; i < card.card_faces.length; i++) { const face = card.card_faces[i]; const fd = document.createElement('div'); fd.className = 'face-item'; fd.style.animationDelay = `${0.15 + i * 0.1}s`; const fi = document.createElement('img'); fi.src = faceUrls[i] || ''; fi.alt = face.name; fi.loading = 'lazy'; fd.appendChild(fi); const lbl = document.createElement('div'); lbl.className = 'face-label'; lbl.innerText = face.name; const od = document.createElement('div'); od.className = 'face-oracle'; od.innerText = face.oracle_text || ''; fd.append(lbl, od); DOM.modalFaces.appendChild(fd); } }
+          else { DOM.modalImg.style.display = 'block'; DOM.modalImg.src = faceUrls[0] || ''; DOM.modalImg.alt = card.name; DOM.modalImg.className = 'modal-img-visible'; }
+          DOM.modalLoader.style.display = 'none'; if (thisLoadId !== modalLoadId) return;
+          let oracleStr = ''; if (hasFaces) { for (let i = 0; i < card.card_faces.length; i++) { const f = card.card_faces[i]; if (i > 0) oracleStr += '\n\n'; oracleStr += `${f.name}\n${f.oracle_text || '(no oracle text)'}`; } DOM.modalOracleText.innerText = oracleStr; } else DOM.modalOracleText.innerText = card.oracle_text || '(no oracle text)';
+          const manaHtml = card.mana_cost ? card.mana_cost.replace(/{([^}]+)}/g, '<span class="mana-symbol">{$1}</span>') : ''; const setCode = card.set ? card.set.toUpperCase() : '';
+          DOM.modalCardName.innerText = setCode ? `${card.name} (${setCode})` : card.name; DOM.modalSourceBadge.innerText = `from: ${source || 'search'}`; DOM.modalNameLine.innerHTML = `${card.name || ''} ${manaHtml}`; DOM.modalTypeLine.innerText = card.type_line || '';
+          if (card.scryfall_uri) { DOM.modalScryfallLink.href = card.scryfall_uri; DOM.modalScryfallLink.innerText = '🔗 View on Scryfall'; } else if (card.uri) { DOM.modalScryfallLink.href = card.uri; DOM.modalScryfallLink.innerText = '🔗 View on Scryfall'; }
+          const meta = [['Set', card.set_name || card.set || ''], ['Collector #', card.collector_number || ''], ['Rarity', card.rarity || ''], ['Artist', card.artist || ''], ['Border', card.border_color || ''], ['Frame', card.frame || ''], ['CMC', card.cmc !== undefined ? String(card.cmc) : ''], ['Colors', card.colors ? card.colors.join(', ') : ''], ['Color Identity', card.color_identity ? card.color_identity.join(', ') : ''], ['Keywords', card.keywords ? card.keywords.join(', ') : ''], ['Language', card.lang || 'en'], ['Released', card.released_at || ''], ['Reserved', card.reserved ? 'Yes' : 'No'], ['EDH Rec', card.edhrec_rank ? String(card.edhrec_rank) : '']];
+          DOM.modalMetaGrid.innerHTML = meta.filter(([, v]) => v).map(([l, v]) => `<div><span class="meta-label">${l}:</span> <span class="meta-value">${v}</span></div>`).join('');
+          const prices = card.prices || {}; const pe = [['USD', prices.usd], ['USD Foil', prices.usd_foil], ['EUR', prices.eur], ['EUR Foil', prices.eur_foil], ['TIX', prices.tix]].filter(([, v]) => v);
+          DOM.modalPrices.innerHTML = pe.length ? pe.map(([c, a]) => `<span class="price-item"><span class="currency">${c}:</span> <span class="amount">${a}</span></span>`).join('') : '<span style="color:#7e9ec7;">No price data</span>';
+          const legal = card.legalities || {}; const order = ['standard', 'future', 'historic', 'timeless', 'gladiator', 'pioneer', 'modern', 'legacy', 'pauper', 'vintage', 'penny', 'commander', 'oathbreaker', 'brawl', 'alchemy', 'duel', 'oldschool', 'premodern', 'predh'];
+          DOM.modalLegalityGrid.innerHTML = order.filter(f => legal[f] !== undefined).map(f => `<div class="legality-item"><span class="format">${f}</span> <span class="status ${legal[f]}">${legal[f]}</span></div>`).join('');
+          const clean = { ...card }; if (clean.image_uris) delete clean.image_uris; if (clean.card_faces) clean.card_faces = clean.card_faces.map(f => { const c = { ...f }; if (c.image_uris) delete c.image_uris; return c; });
+          DOM.modalJsonBox.innerText = JSON.stringify(clean, null, 2); DOM.modalJsonBox.style.display = 'none'; DOM.modalJsonToggle.innerText = '📄 show raw JSON'; DOM.modalJsonToggle.onclick = () => { const h = DOM.modalJsonBox.style.display === 'none'; DOM.modalJsonBox.style.display = h ? 'block' : 'none'; DOM.modalJsonToggle.innerText = h ? '📄 hide raw JSON' : '📄 show raw JSON'; };
+        } catch (err) { LOG.error('Modal error:', err); if (thisLoadId === modalLoadId) { DOM.modalLoader.style.display = 'flex'; DOM.modalLoader.querySelector('span').textContent = 'Error'; DOM.modalCardName.innerText = 'Error'; } }
+      }
+      function closeModal() { DOM.modal.classList.add('closing'); setTimeout(() => { DOM.modal.style.display = 'none'; DOM.modal.classList.remove('closing'); resetModalUI(); document.body.style.overflow = ''; }, 200); currentModalCardId = null; }
+
+      function getArtStyle() { for (const r of DOM.artRadios) if (r.checked) return r.value; return 'normal'; }
+      async function getImageUrlForCard(card, faceIndex, style) {
+        let url = ''; if (faceIndex !== null && faceIndex !== undefined && card.card_faces && card.card_faces[faceIndex]) { const fu = card.card_faces[faceIndex].image_uris; if (fu) url = fu[style] || fu.normal || fu.large || ''; }
+        if (!url && card.image_uris) url = card.image_uris[style] || card.image_uris.normal || card.image_uris.large || card.image_uris.png || '';
+        if (!url && card.card_faces && card.card_faces[0] && card.card_faces[0].image_uris) { const f = card.card_faces[0].image_uris; url = f[style] || f.normal || f.large || f.png || ''; }
+        if (url) { const cached = await getCachedImageUrl(url); return cached || url; }
+        return 'data:image/svg+xml,%3Csvg viewBox="0 0 200 280" xmlns="http://www.w3.org/2000/svg"%3E%3Crect width="200" height="280" fill="%23151e2a"/%3E%3Ctext x="20" y="140" fill="%236b8bb0"%3E?%3C/text%3E%3C/svg%3E';
+      }
+      async function getImageUrlCached(card, style) { return await getImageUrlForCard(card, null, style); }
+
+      let searchAbortController = null, searching = false;
+      function stopSearch() { if (searchAbortController) { searchAbortController.abort(); LOG.info('Search stopped by user'); } searching = false; DOM.searchBtn.disabled = false; DOM.stopBtn.classList.remove('visible'); DOM.progress.innerText = 'stopped'; DOM.lastApiCall.innerText = '⏹ stopped'; }
+      async function doSearch() {
+        if (searching) return; const { lines, queries } = translateAll(); if (!queries.length) { resetGridForSearch(); DOM.resultCount.innerText = '0 cards'; DOM.errorCount.innerText = '0 errors'; DOM.cardGrid.innerHTML = '<div class="no-results">write something</div>'; return; }
+        searching = true; DOM.searchBtn.disabled = true; DOM.stopBtn.classList.add('visible'); resetGridForSearch(); DOM.progress.innerText = `0/${queries.length} · loading`;
+        try { await searchAll(queries, lines, (c, t) => { DOM.progress.innerText = `${c}/${t} queries done`; if (c === t) DOM.progress.innerText = 'complete'; }); } catch (e) { DOM.cardGrid.innerHTML = `<div class="no-results">error: ${e.message}</div>`; DOM.progress.innerText = 'error'; }
+        searching = false; DOM.searchBtn.disabled = false; DOM.stopBtn.classList.remove('visible');
+      }
+      async function doCustomSearch() {
+        if (searching) return; const raw = DOM.customQueries.value.split('\n').filter(l => l.trim()); if (!raw.length) return;
+        searching = true; DOM.searchBtn.disabled = true; DOM.stopBtn.classList.add('visible'); resetGridForSearch(); DOM.progress.innerText = `custom 0/${raw.length}`;
+        try { await searchAll(raw, raw, (c, t) => { DOM.progress.innerText = `custom ${c}/${t}`; if (c === t) DOM.progress.innerText = 'custom done'; }); } catch (e) { DOM.cardGrid.innerHTML = `<div class="no-results">${e.message}</div>`; }
+        searching = false; DOM.searchBtn.disabled = false; DOM.stopBtn.classList.remove('visible');
+      }
+      async function searchAll(queries, lines, onProgress) {
+        if (searchAbortController) searchAbortController.abort(); const abortCtrl = new AbortController(); searchAbortController = abortCtrl; const signal = abortCtrl.signal;
+        const total = queries.length; let flatCount = 0, errs = 0; const addKey = `${DOM.firstPrinting.checked ? 'first' : 'all'}|${DOM.sortOrder.value}`; const isGrouped = DOM.groupByQuery.checked; resetGridForSearch();
+        for (let i = 0; i < total; i++) {
+          if (signal.aborted) return; let cards = []; try { cards = await fetchCached(queries[i], addKey); if (!cards.length) errs++; } catch (e) { errs++; LOG.error(`Query ${i + 1} error:`, e); }
+          if (isGrouped) addOrUpdateQueryGroup(lines[i], cards); else appendFlatCards(cards, lines[i]);
+          flatCount += cards.length; DOM.resultCount.innerText = `${flatCount} card${flatCount !== 1 ? 's' : ''}`; DOM.errorCount.innerText = `${errs} error${errs !== 1 ? 's' : ''}`; onProgress(i + 1, total);
+          if (i < total - 1) { await new Promise(r => setTimeout(r, 1200)); if (signal.aborted) return; }
+        }
+        LOG.success(`Search: ${flatCount} cards, ${errs} errors`); return { flatCount, errs };
+      }
+
+      async function fetchRandom() { showLoadingModal('random'); await fetchSingleCard('https://api.scryfall.com/cards/random', 'random'); }
+      async function fetchBySetNum() { const set = DOM.cardSet.value.trim().toUpperCase(), num = DOM.cardNumber.value.trim(); if (!set || !num) return; showLoadingModal('set+number'); await fetchSingleCard(`https://api.scryfall.com/cards/${set}/${num}`, 'set+number'); }
+      async function fetchBulk() { DOM.bulkOutput.style.display = 'block'; DOM.bulkOutput.innerText = 'Loading…'; try { const r = await fetch('https://api.scryfall.com/bulk-data', { headers: { 'Accept': 'application/json', 'User-Agent': 'MultiverseEngine/1.0' } }); if (!r.ok) throw new Error(`HTTP ${r.status}`); const d = await r.json(); if (d.data && Array.isArray(d.data)) { let o = '📦 Bulk Data Files\n\n'; d.data.forEach(i => o += `• ${i.type}\n  URL: ${i.download_uri || i.uri}\n  Size: ${i.compressed_size ? (i.compressed_size / 1024 / 1024).toFixed(1) + ' MB' : 'unknown'}\n\n`); DOM.bulkOutput.innerText = o; } else DOM.bulkOutput.innerText = '⚠️ Unexpected format.'; } catch (e) { DOM.bulkOutput.innerText = `❌ ${e.message}`; } }
+
+      async function showDB() { DOM.dbEntries.innerHTML = 'Loading…'; try { const entries = await dbGetAll(); if (!entries.length) { DOM.dbEntries.innerHTML = '<span style="color:#7e9ec7;">Database is empty.</span>'; DOM.dbStats.innerText = '0 entries'; return; } DOM.dbStats.innerText = `${entries.length} entries · ~${(new Blob([JSON.stringify(entries)]).size / 1024).toFixed(1)} KB`; DOM.dbEntries.innerHTML = entries.map(e => { const d = e.data, preview = Array.isArray(d) ? `[${d.length} cards] ${d.slice(0, 3).map(c => c.name).join(', ')}${d.length > 3 ? ' …' : ''}` : d.name && d.type_line ? `${d.name} (${d.set || '?'})` : e.type === 'setnum' && d && d.cardId ? `↳ ${d.cardId}` : 'unknown'; return `<div style="border-bottom:1px solid #1a212e;padding:6px 0;font-size:0.65rem;"><span style="color:#b3cbe0;">${e.key}</span> <span style="color:#7e9ec7;">${e.type} · ${new Date(e.timestamp).toLocaleString()}</span><br><span style="color:#8da3c0;">${preview}</span></div>`; }).join(''); } catch (e) { DOM.dbEntries.innerHTML = `<span style="color:#f28b82;">Error: ${e.message}</span>`; } }
+      async function showAllCardImages() { DOM.dbEntries.innerHTML = 'Loading…'; try { const entries = await dbGetAll(); const cards = entries.filter(e => e.type === 'card' && e.data && e.data.name); if (!cards.length) { DOM.dbEntries.innerHTML = '<span style="color:#7e9ec7;">No images.</span>'; return; } DOM.dbStats.innerText = `${cards.length} card images`; const style = getArtStyle(); let html = ''; for (const e of cards) { const imgUrl = await getImageUrlCached(e.data, style); html += `<div class="card-grid-item" data-card-id="${e.data.id}"><img src="${imgUrl}" alt="${e.data.name}" loading="lazy"><div class="card-name">${e.data.name}</div></div>`; } DOM.dbEntries.innerHTML = html; DOM.dbEntries.querySelectorAll('.card-grid-item').forEach(el => { const c = cards.find(e => e.data.id === el.dataset.cardId); if (c) el.addEventListener('click', () => showModal(c.data, 'database')); }); } catch (e) { DOM.dbEntries.innerHTML = `<span style="color:#f28b82;">${e.message}</span>`; } }
+      async function deleteAllDB() { if (!confirm('Delete ALL data?')) return; DOM.dbStats.innerText = 'Deleting…'; await dbClear(); DOM.dbStats.innerText = 'Deleted'; DOM.dbEntries.innerHTML = '<span style="color:#7e9ec7;">Cleared.</span>'; try { const cache = await caches.open(IMAGE_CACHE_NAME); (await cache.keys()).forEach(r => cache.delete(r)); } catch (e) { } }
+
+      function refreshQueries() { translateAll(); }
+      DOM.stopBtn.addEventListener('click', stopSearch);
+      DOM.artRadios.forEach(r => r.addEventListener('change', () => { if (!searching) doSearch(); }));
+      DOM.groupByQuery.addEventListener('change', () => { if (!searching) doSearch(); });
+      DOM.sortOrder.addEventListener('change', () => { if (!searching) doSearch(); });
+      DOM.globalSet.addEventListener('input', () => { if (!searching) doSearch(); });
+      DOM.language.addEventListener('change', () => { if (!searching) doSearch(); });
+      DOM.firstPrinting.addEventListener('change', () => { if (!searching) doSearch(); });
+      DOM.searchBtn.addEventListener('click', doSearch);
+      DOM.randomBtn.addEventListener('click', fetchRandom);
+      DOM.searchCustom.addEventListener('click', doCustomSearch);
+      DOM.refreshQueries.addEventListener('click', refreshQueries);
+      DOM.fetchBySetNum.addEventListener('click', fetchBySetNum);
+      DOM.fetchRandomDev.addEventListener('click', fetchRandom);
+      DOM.fetchBulk.addEventListener('click', fetchBulk);
+      DOM.docToggle.addEventListener('click', () => { const v = DOM.docContent.style.display === 'block'; DOM.docContent.style.display = v ? 'none' : 'block'; DOM.docToggle.innerHTML = v ? '📘 syntax reference ▼' : '📘 syntax reference ▲'; });
+      DOM.advToggle.addEventListener('click', () => { const v = DOM.advContent.style.display === 'flex'; DOM.advContent.style.display = v ? 'none' : 'flex'; DOM.advToggle.innerHTML = v ? '⚙️ advanced ▼' : '⚙️ advanced ▲'; if (!v) refreshQueries(); });
+      DOM.devToggle.addEventListener('click', () => { const v = DOM.devContent.style.display === 'flex'; DOM.devContent.style.display = v ? 'none' : 'flex'; DOM.devToggle.innerHTML = v ? '🛠️ Developer ▼' : '🛠️ Developer ▲'; });
+      DOM.dbToggle.addEventListener('click', () => { const v = DOM.dbContent.style.display === 'flex'; DOM.dbContent.style.display = v ? 'none' : 'flex'; DOM.dbToggle.innerHTML = v ? '💾 Offline DB ▼' : '💾 Offline DB ▲'; });
+      DOM.dbShow.addEventListener('click', showDB); DOM.dbShowImages.addEventListener('click', showAllCardImages); DOM.dbDeleteAll.addEventListener('click', deleteAllDB);
+      DOM.closeModal.addEventListener('click', closeModal); DOM.modal.addEventListener('click', e => { if (e.target === DOM.modal) closeModal(); });
+      DOM.closeAbout.addEventListener('click', () => { DOM.aboutModal.classList.add('closing'); setTimeout(() => { DOM.aboutModal.style.display = 'none'; DOM.aboutModal.classList.remove('closing'); document.body.style.overflow = ''; }, 200); });
+      DOM.aboutModal.addEventListener('click', e => { if (e.target === DOM.aboutModal) { DOM.aboutModal.classList.add('closing'); setTimeout(() => { DOM.aboutModal.style.display = 'none'; DOM.aboutModal.classList.remove('closing'); document.body.style.overflow = ''; }, 200); } });
+      DOM.aboutBtn.addEventListener('click', () => { DOM.aboutModal.style.display = 'flex'; DOM.aboutModal.classList.remove('closing'); document.body.style.overflow = 'hidden'; });
+      window.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal(); if (DOM.aboutModal.style.display === 'flex') { DOM.aboutModal.classList.add('closing'); setTimeout(() => { DOM.aboutModal.style.display = 'none'; DOM.aboutModal.classList.remove('closing'); document.body.style.overflow = ''; }, 200); } } });
+      DOM.scrollTopBtn.addEventListener('click', () => { window.scrollTo({ top: 0, behavior: 'smooth' }); });
+      if (quill) quill.on('text-change', refreshQueries);
+
+      (async function init() {
+        try { await openDB(); DOM.dbStats.innerText = 'DB ready'; } catch (e) { DOM.dbStats.innerText = 'DB unavailable'; }
+        if (quill) {
+          quill.setText(`"Black Lotus"\nSearch your library for a card, put that card into your hand, discard a card at random, then shuffle.\nExile two cards from your graveyard: This creature deals 2 damage to any target\nadd: RRRRRRR\n1 Ancient Den (SLD)\nBlack Lotus\n"Crystal Dragon // Rob the Hoard"\nt:dragon c<=WGB pow>3 r=uncommon\n"Delver of Secrets"\n1 Lotus Petal (MPS) 15 *F*\nBirgi, God of Storytelling // Harnfel, Horn of Bounty (KHM)\nBirgi, God of Storytelling / Harnfel, Horn of Bounty (KHM) 311`);
+          refreshQueries();
+          setTimeout(doSearch, 600);
+        }
+        LOG.success('Ready – collector number support & scroll‑to‑top button');
+      })();
+    })();
+  </script>
+</body>
+
+</html>
