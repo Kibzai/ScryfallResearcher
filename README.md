@@ -1,4 +1,5 @@
 # Multiverse · Scryfall Researcher — Complete Architecture & Logic
+## [Webpage](https://kibzai.github.io/ScryfallResearcher/)
 
 **A self-contained, offline-capable Magic: The Gathering research tool powered by the Scryfall API**  
 Single HTML file · No build step · IndexedDB + Cache API persistence · Real-time search
