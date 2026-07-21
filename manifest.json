@@ -2,19 +2,20 @@
   "name": "Scryfall Researcher",
   "short_name": "Researcher",
   "description": "Busca cartas de Magic con Scryfall, offline y fullscreen.",
-  "start_url": "/",
+  "start_url": "./",
+  "scope": "./",
   "display": "fullscreen",
-  "background_color": "#0a0c10",
+  "background_color": "#000000",
   "theme_color": "#0a0c10",
   "icons": [
     {
-      "src": "/assets/icons/icon-192.png",
+      "src": "assets/favicon/web-app-manifest-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/assets/icons/icon-512.png",
+      "src": "assets/favicon/web-app-manifest-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

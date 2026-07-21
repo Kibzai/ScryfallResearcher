@@ -10,13 +10,13 @@
     content="black-translucent"
   />
   <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
-    
+
+  <meta name="apple-mobile-web-app-title" content="Magic Researcher" />
   <link rel="icon" type="image/png" href="assets/favicon/favicon-96x96.png?v=20260714" sizes="96x96" />
   <link rel="icon" type="image/svg+xml" href="assets/favicon/favicon.svg?v=20260714" />
   <link rel="shortcut icon" href="assets/favicon/favicon.ico?v=20260714" />
   <link rel="apple-touch-icon" sizes="180x180" href="assets/favicon/apple-touch-icon.png?v=20260714" />
-  <meta name="apple-mobile-web-app-title" content="Magic Researcher" />
-  <link rel="manifest" href="assets/favicon/site.webmanifest?v=20260714" />
+  <link rel="manifest" href="manifest.json?v=20260714" />
   <style>
     :root {
       --bg-deep: #0a0c10;
@@ -1324,7 +1324,7 @@
       <div class="logo"><strong>Scryfall</strong> · Researcher</div>
       <div class="header-actions">
         <button class="random-btn" id="randomBtn">🎲 random</button>
-        <div class="about-link" id="aboutFooterBtn">info</div>
+        <button class="about-link" id="aboutFooterBtn" type="button" aria-label="About Scryfall Researcher">info</button>
       </div>
     </div>
 
@@ -1532,10 +1532,10 @@
   <button class="scroll-top-btn" id="scrollTopBtn" title="Back to top">↑</button>
 
   <!-- MODAL -->
-  <div id="cardInfoModal" class="modal-overlay" style="display:none;">
-    <div class="modal-container">
+  <div id="cardInfoModal" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="modalCardName">
+    <div class="modal-container" tabindex="-1">
       <div class="modal-header">
-        <h3 id="modalCardName">card details</h3><button class="close-modal-btn" id="closeModalBtn">×</button>
+        <h3 id="modalCardName">card details</h3><button class="close-modal-btn" id="closeModalBtn" type="button" aria-label="Close card details">×</button>
       </div>
       <div class="modal-body">
         <div class="modal-loader" id="modalLoader"><span>Loading</span><span
@@ -1562,10 +1562,10 @@
     </div>
   </div>
 
-  <div id="aboutModal" class="modal-overlay" style="z-index:20001;display:none;">
-    <div class="modal-container" style="max-width:550px;">
+  <div id="aboutModal" class="modal-overlay" style="z-index:20001;display:none;" role="dialog" aria-modal="true" aria-labelledby="aboutModalTitle">
+    <div class="modal-container" style="max-width:550px;" tabindex="-1">
       <div class="modal-header">
-        <h3>about</h3><button class="close-modal-btn" id="closeAboutBtn">×</button>
+        <h3 id="aboutModalTitle">about</h3><button class="close-modal-btn" id="closeAboutBtn" type="button" aria-label="Close about dialog">×</button>
       </div>
       <div class="modal-body" style="flex-direction:column;">
         <p><strong>Multiverse · Scryfall Engine</strong></p>
@@ -1636,8 +1636,13 @@
       async function getCardBySetNum(set, num) { const ref = await dbGet(`setnum:${set.toUpperCase()}/${num}`); return ref && ref.cardId ? await dbGet(`card:${ref.cardId}`) : null; }
       async function saveCardAndRef(card) { await dbPut(`card:${card.id}`, card, 'card'); if (card.set && card.collector_number) { await dbPut(`setnum:${card.set.toUpperCase()}/${card.collector_number}`, { cardId: card.id }, 'setnum'); } }
 
-      const IMAGE_CACHE_NAME = 'scryfall-images-v2';
-      async function cacheImage(url) { try { const c = await caches.open(IMAGE_CACHE_NAME); const r = await fetch(url, { mode: 'cors' }); if (r.ok) { await c.put(url, r.clone()); return true; } return false; } catch (e) { return false; } }
+      const IMAGE_CACHE_NAME = 'scryfall-images-v3';
+      const MAX_CACHED_IMAGES = 400;
+      async function trimImageCache(cache) {
+        const keys = await cache.keys();
+        await Promise.all(keys.slice(0, Math.max(0, keys.length - MAX_CACHED_IMAGES)).map(key => cache.delete(key)));
+      }
+      async function cacheImage(url) { try { const c = await caches.open(IMAGE_CACHE_NAME); const r = await fetch(url, { mode: 'cors' }); if (r.ok) { await c.put(url, r.clone()); await trimImageCache(c); return true; } return false; } catch (e) { return false; } }
       async function getCachedImageUrl(url) { try { const c = await caches.open(IMAGE_CACHE_NAME); const r = await c.match(url); if (r) { const b = await r.blob(); return URL.createObjectURL(b); } return null; } catch (e) { return null; } }
       async function preCacheCardImages(card) {
         const urls = []; const sizes = ['normal', 'small'];
@@ -1729,7 +1734,7 @@
         const sort = DOM.sortOrder.value; if (sort === 'oldest') url += '&order=released&dir=asc'; else if (sort === 'newest') url += '&order=released&dir=desc';
         DOM.lastApiCall.innerText = `📡 ${url.slice(0, 70)}...`;
         try {
-          const resp = await fetch(url, { headers: { 'Accept': 'application/json', 'User-Agent': 'MultiverseEngine/1.0' } });
+          const resp = await fetch(url, { headers: { 'Accept': 'application/json' } });
           if (!resp.ok) { logApi(url, 'GET', resp.status); return []; }
           const data = await resp.json(); if (!data.data) return [];
           let results = data.data;
@@ -1746,7 +1751,7 @@
         if (!isRandom) { const m = url.match(/\/cards\/([A-Z0-9]+)\/([0-9]+)/i); if (m) { card = await getCardBySetNum(m[1], m[2]); if (card) { logApi(`setnum:${m[1]}/${m[2]}`, 'CACHE', 200, card); DOM.lastApiCall.innerText = `✅ DB: ${card.name}`; await preCacheCardImages(card); showModal(card, label); return card; } } }
         DOM.lastApiCall.innerText = `📡 ${url}`; showLoadingModal(label);
         try {
-          const resp = await fetch(url, { headers: { 'Accept': 'application/json', 'User-Agent': 'MultiverseEngine/1.0' } });
+          const resp = await fetch(url, { headers: { 'Accept': 'application/json' } });
           if (!resp.ok) return null; card = await resp.json(); if (card.object === 'error') return null;
           DOM.lastApiCall.innerText = `✅ ${card.name} (${card.set})`; await saveCardAndRef(card); await preCacheCardImages(card); showModal(card, label); return card;
         } catch (e) { DOM.lastApiCall.innerText = `⚠️ ${e.message}`; return null; }
@@ -1774,14 +1779,14 @@
       }
 
       function makeCardElement(card, sourceLine, staggerIndex) {
-        const div = document.createElement('div'); div.className = 'card-thumb';
+        const div = document.createElement('div'); div.className = 'card-thumb'; div.tabIndex = 0; div.setAttribute('role', 'button'); div.setAttribute('aria-label', `Open details for ${card.name}`);
         div.style.animationDelay = `${Math.min(staggerIndex * 0.04, 1.2)}s`;
         const img = document.createElement('img'); img.className = 'card-img loading-img'; img.alt = card.name; img.loading = 'lazy';
         const skel = document.createElement('div'); skel.className = 'card-skeleton'; div.append(img, skel);
         const nm = document.createElement('div'); nm.className = 'card-name'; nm.innerText = card.set ? `${card.name} (${card.set.toUpperCase()})` : card.name;
         const ora = document.createElement('div'); ora.className = 'card-oracle-preview'; ora.innerText = card.oracle_text ? card.oracle_text.slice(0, 80) + (card.oracle_text.length > 80 ? '…' : '') : '';
         const src = document.createElement('div'); src.className = 'card-source'; src.innerText = sourceLine.length > 40 ? sourceLine.slice(0, 37) + '…' : sourceLine;
-        div.append(nm, ora, src); div.addEventListener('click', () => showModal(card, 'search'));
+        div.append(nm, ora, src); div.addEventListener('click', () => showModal(card, 'search')); div.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); showModal(card, 'search'); } });
         (async () => { const u = await getImageUrlCached(card, getArtStyle()); img.src = u; img.onload = () => { img.classList.replace('loading-img', 'loaded'); skel.style.display = 'none'; }; img.onerror = () => { img.classList.replace('loading-img', 'loaded'); skel.style.display = 'none'; }; })();
         return div;
       }
@@ -1805,7 +1810,9 @@
 
       function resetGridForSearch() { DOM.cardGrid.innerHTML = ''; DOM.cardGrid.className = DOM.groupByQuery.checked ? 'grid-rows' : 'grid-mixed'; rowMap.clear(); globalCardIndex = 0; autoScroll = true; }
 
-      let modalLoadId = 0, currentModalCardId = null;
+      let modalLoadId = 0, currentModalCardId = null, lastFocusedElement = null;
+      function focusModal(modal) { modal.querySelector('.modal-container').focus(); }
+      function restoreFocus() { if (lastFocusedElement && document.contains(lastFocusedElement)) lastFocusedElement.focus(); lastFocusedElement = null; }
       function resetModalUI() {
         DOM.modalImg.style.display = 'none'; DOM.modalImg.src = ''; DOM.modalImg.className = 'modal-img-hidden'; DOM.modalFaces.innerHTML = ''; DOM.modalLoader.style.display = 'flex'; DOM.modalLoader.querySelector('span').textContent = 'Loading';
         DOM.modalCardName.innerText = 'Loading…'; DOM.modalSourceBadge.innerText = 'from: loading'; DOM.modalNameLine.innerHTML = ''; DOM.modalTypeLine.innerText = ''; DOM.modalOracleText.innerText = '';
@@ -1815,9 +1822,9 @@
         void DOM.modal.querySelector('.modal-image-area').offsetHeight; void DOM.modal.querySelector('.modal-info').offsetHeight;
         DOM.modal.querySelector('.modal-image-area').style.animation = ''; DOM.modal.querySelector('.modal-info').style.animation = '';
       }
-      function showLoadingModal(source) { resetModalUI(); DOM.modalSourceBadge.innerText = `from: ${source || 'loading'}`; DOM.modal.style.display = 'flex'; DOM.modal.classList.remove('closing'); document.body.style.overflow = 'hidden'; currentModalCardId = null; }
+      function showLoadingModal(source) { lastFocusedElement = document.activeElement; resetModalUI(); DOM.modalSourceBadge.innerText = `from: ${source || 'loading'}`; DOM.modal.style.display = 'flex'; DOM.modal.classList.remove('closing'); document.body.style.overflow = 'hidden'; focusModal(DOM.modal); currentModalCardId = null; }
       async function showModal(card, source) {
-        const thisLoadId = ++modalLoadId; currentModalCardId = card.id; resetModalUI(); DOM.modal.style.display = 'flex'; DOM.modal.classList.remove('closing'); document.body.style.overflow = 'hidden';
+        lastFocusedElement = document.activeElement; const thisLoadId = ++modalLoadId; currentModalCardId = card.id; resetModalUI(); DOM.modal.style.display = 'flex'; DOM.modal.classList.remove('closing'); document.body.style.overflow = 'hidden'; focusModal(DOM.modal);
         try {
           const style = getArtStyle(), layout = card.layout, hasFaces = card.card_faces && card.card_faces.length > 0;
           const faceUrls = []; if (hasFaces) { for (let i = 0; i < card.card_faces.length; i++) faceUrls.push(await getImageUrlForCard(card, i, style)); } else faceUrls.push(await getImageUrlForCard(card, null, style));
@@ -1839,7 +1846,7 @@
           DOM.modalJsonBox.innerText = JSON.stringify(clean, null, 2); DOM.modalJsonBox.style.display = 'none'; DOM.modalJsonToggle.innerText = '📄 show raw JSON'; DOM.modalJsonToggle.onclick = () => { const h = DOM.modalJsonBox.style.display === 'none'; DOM.modalJsonBox.style.display = h ? 'block' : 'none'; DOM.modalJsonToggle.innerText = h ? '📄 hide raw JSON' : '📄 show raw JSON'; };
         } catch (err) { LOG.error('Modal error:', err); if (thisLoadId === modalLoadId) { DOM.modalLoader.style.display = 'flex'; DOM.modalLoader.querySelector('span').textContent = 'Error'; DOM.modalCardName.innerText = 'Error'; } }
       }
-      function closeModal() { DOM.modal.classList.add('closing'); setTimeout(() => { DOM.modal.style.display = 'none'; DOM.modal.classList.remove('closing'); resetModalUI(); document.body.style.overflow = ''; }, 200); currentModalCardId = null; }
+      function closeModal() { DOM.modal.classList.add('closing'); setTimeout(() => { DOM.modal.style.display = 'none'; DOM.modal.classList.remove('closing'); resetModalUI(); document.body.style.overflow = ''; restoreFocus(); }, 200); currentModalCardId = null; }
 
       function getArtStyle() { for (const r of DOM.artRadios) if (r.checked) return r.value; return 'normal'; }
       async function getImageUrlForCard(card, faceIndex, style) {
@@ -1879,7 +1886,7 @@
 
       async function fetchRandom() { showLoadingModal('random'); await fetchSingleCard('https://api.scryfall.com/cards/random', 'random'); }
       async function fetchBySetNum() { const set = DOM.cardSet.value.trim().toUpperCase(), num = DOM.cardNumber.value.trim(); if (!set || !num) return; showLoadingModal('set+number'); await fetchSingleCard(`https://api.scryfall.com/cards/${set}/${num}`, 'set+number'); }
-      async function fetchBulk() { DOM.bulkOutput.style.display = 'block'; DOM.bulkOutput.innerText = 'Loading…'; try { const r = await fetch('https://api.scryfall.com/bulk-data', { headers: { 'Accept': 'application/json', 'User-Agent': 'MultiverseEngine/1.0' } }); if (!r.ok) throw new Error(`HTTP ${r.status}`); const d = await r.json(); if (d.data && Array.isArray(d.data)) { let o = '📦 Bulk Data Files\n\n'; d.data.forEach(i => o += `• ${i.type}\n  URL: ${i.download_uri || i.uri}\n  Size: ${i.compressed_size ? (i.compressed_size / 1024 / 1024).toFixed(1) + ' MB' : 'unknown'}\n\n`); DOM.bulkOutput.innerText = o; } else DOM.bulkOutput.innerText = '⚠️ Unexpected format.'; } catch (e) { DOM.bulkOutput.innerText = `❌ ${e.message}`; } }
+      async function fetchBulk() { DOM.bulkOutput.style.display = 'block'; DOM.bulkOutput.innerText = 'Loading…'; try { const r = await fetch('https://api.scryfall.com/bulk-data', { headers: { 'Accept': 'application/json' } }); if (!r.ok) throw new Error(`HTTP ${r.status}`); const d = await r.json(); if (d.data && Array.isArray(d.data)) { let o = '📦 Bulk Data Files\n\n'; d.data.forEach(i => o += `• ${i.type}\n  URL: ${i.download_uri || i.uri}\n  Size: ${i.compressed_size ? (i.compressed_size / 1024 / 1024).toFixed(1) + ' MB' : 'unknown'}\n\n`); DOM.bulkOutput.innerText = o; } else DOM.bulkOutput.innerText = '⚠️ Unexpected format.'; } catch (e) { DOM.bulkOutput.innerText = `❌ ${e.message}`; } }
 
       async function showDB() { DOM.dbEntries.innerHTML = 'Loading…'; try { const entries = await dbGetAll(); if (!entries.length) { DOM.dbEntries.innerHTML = '<span style="color:#7e9ec7;">Database is empty.</span>'; DOM.dbStats.innerText = '0 entries'; return; } DOM.dbStats.innerText = `${entries.length} entries · ~${(new Blob([JSON.stringify(entries)]).size / 1024).toFixed(1)} KB`; DOM.dbEntries.innerHTML = entries.map(e => { const d = e.data, preview = Array.isArray(d) ? `[${d.length} cards] ${d.slice(0, 3).map(c => c.name).join(', ')}${d.length > 3 ? ' …' : ''}` : d.name && d.type_line ? `${d.name} (${d.set || '?'})` : e.type === 'setnum' && d && d.cardId ? `↳ ${d.cardId}` : 'unknown'; return `<div style="border-bottom:1px solid #1a212e;padding:6px 0;font-size:0.65rem;"><span style="color:#b3cbe0;">${e.key}</span> <span style="color:#7e9ec7;">${e.type} · ${new Date(e.timestamp).toLocaleString()}</span><br><span style="color:#8da3c0;">${preview}</span></div>`; }).join(''); } catch (e) { DOM.dbEntries.innerHTML = `<span style="color:#f28b82;">Error: ${e.message}</span>`; } }
       async function showAllCardImages() { DOM.dbEntries.innerHTML = 'Loading…'; try { const entries = await dbGetAll(); const cards = entries.filter(e => e.type === 'card' && e.data && e.data.name); if (!cards.length) { DOM.dbEntries.innerHTML = '<span style="color:#7e9ec7;">No images.</span>'; return; } DOM.dbStats.innerText = `${cards.length} card images`; const style = getArtStyle(); let html = ''; for (const e of cards) { const imgUrl = await getImageUrlCached(e.data, style); html += `<div class="card-grid-item" data-card-id="${e.data.id}"><img src="${imgUrl}" alt="${e.data.name}" loading="lazy"><div class="card-name">${e.data.name}</div></div>`; } DOM.dbEntries.innerHTML = html; DOM.dbEntries.querySelectorAll('.card-grid-item').forEach(el => { const c = cards.find(e => e.data.id === el.dataset.cardId); if (c) el.addEventListener('click', () => showModal(c.data, 'database')); }); } catch (e) { DOM.dbEntries.innerHTML = `<span style="color:#f28b82;">${e.message}</span>`; } }
@@ -1906,10 +1913,11 @@
       DOM.dbToggle.addEventListener('click', () => { const v = DOM.dbContent.style.display === 'flex'; DOM.dbContent.style.display = v ? 'none' : 'flex'; DOM.dbToggle.innerHTML = v ? '💾 Offline DB ▼' : '💾 Offline DB ▲'; });
       DOM.dbShow.addEventListener('click', showDB); DOM.dbShowImages.addEventListener('click', showAllCardImages); DOM.dbDeleteAll.addEventListener('click', deleteAllDB);
       DOM.closeModal.addEventListener('click', closeModal); DOM.modal.addEventListener('click', e => { if (e.target === DOM.modal) closeModal(); });
-      DOM.closeAbout.addEventListener('click', () => { DOM.aboutModal.classList.add('closing'); setTimeout(() => { DOM.aboutModal.style.display = 'none'; DOM.aboutModal.classList.remove('closing'); document.body.style.overflow = ''; }, 200); });
-      DOM.aboutModal.addEventListener('click', e => { if (e.target === DOM.aboutModal) { DOM.aboutModal.classList.add('closing'); setTimeout(() => { DOM.aboutModal.style.display = 'none'; DOM.aboutModal.classList.remove('closing'); document.body.style.overflow = ''; }, 200); } });
-      DOM.aboutBtn.addEventListener('click', () => { DOM.aboutModal.style.display = 'flex'; DOM.aboutModal.classList.remove('closing'); document.body.style.overflow = 'hidden'; });
-      window.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal(); if (DOM.aboutModal.style.display === 'flex') { DOM.aboutModal.classList.add('closing'); setTimeout(() => { DOM.aboutModal.style.display = 'none'; DOM.aboutModal.classList.remove('closing'); document.body.style.overflow = ''; }, 200); } } });
+      function closeAbout() { DOM.aboutModal.classList.add('closing'); setTimeout(() => { DOM.aboutModal.style.display = 'none'; DOM.aboutModal.classList.remove('closing'); document.body.style.overflow = ''; restoreFocus(); }, 200); }
+      DOM.closeAbout.addEventListener('click', closeAbout);
+      DOM.aboutModal.addEventListener('click', e => { if (e.target === DOM.aboutModal) closeAbout(); });
+      DOM.aboutBtn.addEventListener('click', () => { lastFocusedElement = document.activeElement; DOM.aboutModal.style.display = 'flex'; DOM.aboutModal.classList.remove('closing'); document.body.style.overflow = 'hidden'; focusModal(DOM.aboutModal); });
+      window.addEventListener('keydown', e => { if (e.key === 'Escape') { if (DOM.aboutModal.style.display === 'flex') closeAbout(); else if (DOM.modal.style.display === 'flex') closeModal(); } });
       DOM.scrollTopBtn.addEventListener('click', () => { window.scrollTo({ top: 0, behavior: 'smooth' }); });
       if (quill) quill.on('text-change', refreshQueries);
 
@@ -1927,7 +1935,7 @@
   <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js')
+      navigator.serviceWorker.register('./sw.js')
         .then(reg => console.log('✅ SW registrado:', reg))
         .catch(err => console.error('❌ Error SW:', err));
     });

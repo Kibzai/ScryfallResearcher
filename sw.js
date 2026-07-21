@@ -1,52 +1,35 @@
-const CACHE_NAME = 'scryfall-researcher-v1';
-const STATIC_URLS = [
-  '/',
-  '/index.html',
-  // Si tienes CSS/JS externos añádelos aquí
-  'https://cdn.quilljs.com/1.3.6/quill.snow.css',
-  'https://cdn.quilljs.com/1.3.6/quill.js'
-];
+const CACHE_NAME = 'scryfall-researcher-static-v2';
+const STATIC_URLS = ['./', './index.html', './manifest.json'];
 
 self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(STATIC_URLS))
-  );
+  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(STATIC_URLS)).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', event => {
-  event.waitUntil(
-    caches.keys().then(keys => {
-      return Promise.all(
-        keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
-      );
-    })
-  );
+  event.waitUntil(caches.keys().then(keys => Promise.all(keys
+    .filter(key => key.startsWith('scryfall-researcher-static-') && key !== CACHE_NAME)
+    .map(key => caches.delete(key)))).then(() => self.clients.claim()));
 });
 
 self.addEventListener('fetch', event => {
+  if (event.request.method !== 'GET') return;
   const url = new URL(event.request.url);
+  if (url.origin !== self.location.origin || url.pathname.includes('/api.scryfall.com/')) return;
 
-  // Para las peticiones a la API de Scryfall, NO las cacheamos (mejor usar IndexedDB)
-  if (url.hostname === 'api.scryfall.com') {
+  if (event.request.mode === 'navigate') {
+    event.respondWith(fetch(event.request).then(response => {
+      const copy = response.clone();
+      caches.open(CACHE_NAME).then(cache => cache.put('./index.html', copy));
+      return response;
+    }).catch(() => caches.match('./index.html')));
     return;
   }
 
-  // Para imágenes de Scryfall (cdn) usamos cache-first, pero el código ya tiene su propia caché.
-  // Podemos dejar que el código maneje las imágenes, o añadirlas aquí.
-  // En este ejemplo, cacheamos todo lo que no sea API.
-  event.respondWith(
-    caches.match(event.request)
-      .then(response => {
-        if (response) return response;
-        return fetch(event.request).then(fetchResponse => {
-          // Guardamos en caché solo recursos GET exitosos (excepto API)
-          if (event.request.method === 'GET' && fetchResponse.status === 200) {
-            const clone = fetchResponse.clone();
-            caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-          }
-          return fetchResponse;
-        });
-      })
-  );
+  event.respondWith(caches.match(event.request).then(cached => cached || fetch(event.request).then(response => {
+    if (response.ok) {
+      const copy = response.clone();
+      caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
+    }
+    return response;
+  })));
 });
